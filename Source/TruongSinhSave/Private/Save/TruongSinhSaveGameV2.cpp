@@ -234,6 +234,25 @@ bool FTruongSinhSaveJsonCodecV2::Serialize(
         FormationValues.Add(MakeShared<FJsonValueObject>(Item));
     }
     Simulation->SetArrayField(TEXT("formations"), FormationValues);
+
+    TArray<FTruongSinhConflictRecord> Conflicts = State.ConflictRecords;
+    Conflicts.Sort([](const FTruongSinhConflictRecord& A, const FTruongSinhConflictRecord& B)
+    {
+        return A.CommandId.ToString(EGuidFormats::Digits) < B.CommandId.ToString(EGuidFormats::Digits);
+    });
+    TArray<TSharedPtr<FJsonValue>> ConflictValues;
+    for (const FTruongSinhConflictRecord& Conflict : Conflicts)
+    {
+        const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+        Item->SetStringField(TEXT("command"), Conflict.CommandId.ToString(EGuidFormats::Digits));
+        Item->SetStringField(TEXT("encounter"), Conflict.EncounterId.Value);
+        Item->SetStringField(TEXT("opponent"), Conflict.OpponentId.Value);
+        Item->SetStringField(TEXT("outcome"), Conflict.OutcomeId.Value);
+        SetInteger(Item, TEXT("permanent_damage_days"), Conflict.PermanentDamageDays);
+        Item->SetBoolField(TEXT("opponent_defeated"), Conflict.bOpponentDefeated);
+        ConflictValues.Add(MakeShared<FJsonValueObject>(Item));
+    }
+    Simulation->SetArrayField(TEXT("conflicts"), ConflictValues);
     Root->SetObjectField(TEXT("simulation"), Simulation);
 
     const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutJson);
@@ -472,6 +491,33 @@ bool FTruongSinhSaveJsonCodecV2::Deserialize(
         }
         FormationCommandIds.Add(Formation.CommandId);
         State.Formations.Add(MoveTemp(Formation));
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* ConflictValues = nullptr;
+    if (Simulation->TryGetArrayField(TEXT("conflicts"), ConflictValues) && ConflictValues)
+    {
+        TSet<FGuid> ConflictCommandIds;
+        for (const TSharedPtr<FJsonValue>& Value : *ConflictValues)
+        {
+            const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;
+            FTruongSinhConflictRecord Conflict;
+            FString CommandText;
+            if (!Item.IsValid() || !Item->TryGetStringField(TEXT("command"), CommandText) ||
+                !FGuid::ParseExact(CommandText, EGuidFormats::Digits, Conflict.CommandId) ||
+                !GetStableId(Item, TEXT("encounter"), Conflict.EncounterId, false, OutError) ||
+                !GetStableId(Item, TEXT("opponent"), Conflict.OpponentId, false, OutError) ||
+                !GetStableId(Item, TEXT("outcome"), Conflict.OutcomeId, false, OutError) ||
+                !GetInteger(Item, TEXT("permanent_damage_days"), Conflict.PermanentDamageDays, OutError) ||
+                !Item->TryGetBoolField(TEXT("opponent_defeated"), Conflict.bOpponentDefeated) ||
+                ConflictCommandIds.Contains(Conflict.CommandId) || !CommandIds.Contains(Conflict.CommandId) ||
+                Conflict.PermanentDamageDays < 0)
+            {
+                OutError = TEXT("Invalid or duplicate conflict record.");
+                return false;
+            }
+            ConflictCommandIds.Add(Conflict.CommandId);
+            State.ConflictRecords.Add(MoveTemp(Conflict));
+        }
     }
 
     if (State.SchemaVersion != 2 || State.ElapsedMinutes < 0 ||

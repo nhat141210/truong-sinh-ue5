@@ -19,7 +19,7 @@ def stable_id(value):
 
 def definition(activity_id, facility_id, resolver_id, duration, minimum, difficulty,
                technique, preparation, environment, output_id="", maximum_output=0,
-               formation_effect_id="", formation_duration=0):
+               formation_effect_id="", formation_duration=0, conflict_opponent_id=""):
     result = unreal.TruongSinhActivityDefinition()
     result.set_editor_property("activity_id", stable_id(activity_id))
     result.set_editor_property("facility_id", stable_id(facility_id))
@@ -38,6 +38,8 @@ def definition(activity_id, facility_id, resolver_id, duration, minimum, difficu
     if formation_effect_id:
         result.set_editor_property("formation_effect_id", stable_id(formation_effect_id))
         result.set_editor_property("formation_duration_minutes", formation_duration)
+    if conflict_opponent_id:
+        result.set_editor_property("conflict_opponent_id", stable_id(conflict_opponent_id))
     return result
 
 
@@ -106,6 +108,18 @@ registry.set_editor_property("definitions", [
         400,
         formation_effect_id="effect.formation.spirit_gathering",
         formation_duration=10080,
+    ),
+    definition(
+        "activity.conflict.cloud_palm_trial",
+        "facility.conflict.cloud_palm_trial",
+        "conflict",
+        30,
+        500,
+        7200,
+        550,
+        250,
+        150,
+        conflict_opponent_id="npc.rival.cloud_palm_disciple",
     ),
 ])
 

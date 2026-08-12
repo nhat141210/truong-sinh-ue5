@@ -224,6 +224,11 @@ def build_map():
     if not formation_site_class:
         raise RuntimeError("Could not load native TruongSinhFormationSite class")
     formation_site = spawn(formation_site_class, (1500, 0, 48), (0, 0, 0), "VT_FormationSite")
+
+    conflict_site_class = unreal.load_class(None, "/Script/TruongSinhUE5.TruongSinhConflictSite")
+    if not conflict_site_class:
+        raise RuntimeError("Could not load native TruongSinhConflictSite class")
+    conflict_site = spawn(conflict_site_class, (1050, 0, 48), (0, 0, 0), "VT_ConflictSite")
     formation_site.set_actor_scale3d(unreal.Vector(1.25, 1.25, 1.25))
 
     for index, (x, y, scale) in enumerate(((820, -920, 0.85), (1450, 1030, 1.15), (2800, 1040, 0.95), (4200, -1010, 1.25), (4650, 970, 0.8))):

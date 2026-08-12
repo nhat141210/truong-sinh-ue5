@@ -328,6 +328,7 @@ bool FTruongSinhAutoResolutionSpec::RunTest(const FString& Parameters)
     Plan.MethodId.Value = TEXT("technique.sample");
     Plan.LocationId.Value = TEXT("location.arena.sample");
     Plan.Type = ETruongSinhActivityType::Conflict;
+    Plan.ConflictOpponentId.Value = TEXT("npc.rival.sample");
     Plan.Strategy = ETruongSinhActivityStrategy::Cautious;
     Plan.DurationMinutes = 30;
 
@@ -721,6 +722,73 @@ bool FTruongSinhFormationStateSpec::RunTest(const FString& Parameters)
     const FTruongSinhActionResult ExpireResult = FTruongSinhGameSimulation::Execute(State, Expire);
     TestEqual(TEXT("Canonical time advance commits"), ExpireResult.Status, ETruongSinhActionStatus::Committed);
     TestEqual(TEXT("Formation expires at its canonical game-time boundary"), State.Formations.Num(), 0);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhConflictCommitSpec,
+    "TruongSinh.Activity.ConflictCommitAndSave",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhConflictCommitSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    const int64 CultivationBefore = State.CurrentVessel.CultivationUnits;
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(101, 102, 103, 104);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitResolvedActivityActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Type = ETruongSinhActivityType::Conflict;
+    Plan.ActivityId.Value = TEXT("activity.conflict.cloud_palm_trial");
+    Plan.MethodId.Value = TEXT("method.five_elements_breathing");
+    Plan.FacilityId.Value = TEXT("facility.conflict.cloud_palm_trial");
+    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
+    Plan.ConflictOpponentId.Value = TEXT("npc.rival.cloud_palm_disciple");
+    Plan.DurationMinutes = 30;
+    Plan.Strategy = ETruongSinhActivityStrategy::Cautious;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 1000;
+    Snapshot.DifficultyOrTargetPower = 10000;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestEqual(TEXT("Large deficit deterministically loses conflict"),
+        Resolution.Outcome, ETruongSinhResolutionOutcome::Failure);
+    TestEqual(TEXT("Failure applies authored permanent damage"), Resolution.ConflictPermanentDamageDays, 30ll);
+    TestEqual(TEXT("Conflict never emits cultivation reward"), Resolution.CultivationProgressUnits, 0ll);
+
+    FTruongSinhResolvedActivityCommitPayload Payload;
+    Payload.ActivityId = Plan.ActivityId;
+    Payload.RequiredCurrentRealmId = State.CurrentVessel.RealmId;
+    Payload.Minutes = Resolution.TimeAdvancedMinutes;
+    Payload.OutcomeId = Resolution.OutcomeId;
+    Payload.ReplayId = Resolution.ReplayId;
+    Payload.ConflictOpponentId = Resolution.ConflictOpponentId;
+    Payload.ConflictPermanentDamageDays = Resolution.ConflictPermanentDamageDays;
+    Payload.bConflictOpponentDefeated = Resolution.bConflictOpponentDefeated;
+    Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
+
+    const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Conflict commits through shared gateway"), Commit.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("Conflict advances authored time"), State.ElapsedMinutes, 30ll);
+    TestEqual(TEXT("Conflict does not grant cultivation"), State.CurrentVessel.CultivationUnits, CultivationBefore);
+    TestEqual(TEXT("Failure persists lifespan damage"), State.CurrentVessel.Lifespan.PermanentDamageDays, 30ll);
+    TestEqual(TEXT("One canonical conflict record is appended"), State.ConflictRecords.Num(), 1);
+    const FTruongSinhActionResult Retry = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Retry is rejected"), Retry.Status, ETruongSinhActionStatus::Rejected);
+    TestEqual(TEXT("Retry cannot duplicate damage"), State.CurrentVessel.Lifespan.PermanentDamageDays, 30ll);
+
+    FTruongSinhSaveGameV2 Save;
+    Save.Simulation = State;
+    Save.PayloadHash = FTruongSinhGameSimulation::ComputeStateHash(State);
+    FString Json;
+    FString Error;
+    TestTrue(TEXT("Conflict state serializes"), FTruongSinhSaveJsonCodecV2::Serialize(Save, Json, Error));
+    FTruongSinhSaveGameV2 Loaded;
+    TestTrue(TEXT("Conflict state restores"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
+    TestEqual(TEXT("Save retains conflict record"), Loaded.Simulation.ConflictRecords.Num(), 1);
+    TestEqual(TEXT("Save retains damage"), Loaded.Simulation.CurrentVessel.Lifespan.PermanentDamageDays, 30ll);
     return true;
 }
 

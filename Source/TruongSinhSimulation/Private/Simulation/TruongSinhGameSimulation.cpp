@@ -82,7 +82,10 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
             (ActivityPayload->FormationDurationMinutes > 0 &&
                 (!ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps <= 0)) ||
             (ActivityPayload->FormationDurationMinutes == 0 &&
-                (ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps != 0)))))
+                (ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps != 0)) ||
+            ActivityPayload->ConflictPermanentDamageDays < 0 ||
+            (!ActivityPayload->ConflictOpponentId.IsValid() &&
+                (ActivityPayload->ConflictPermanentDamageDays != 0 || ActivityPayload->bConflictOpponentDefeated)))))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
@@ -112,6 +115,11 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
     }
+    if (ActivityPayload && InOutState.CurrentVessel.Lifespan.PermanentDamageDays >
+        MAX_int64 - ActivityPayload->ConflictPermanentDamageDays)
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
+    }
 
     FTruongSinhActionResult Result;
     Result.Status = ETruongSinhActionStatus::Committed;
@@ -136,6 +144,7 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     if (ActivityPayload)
     {
         InOutState.CurrentVessel.Lifespan.RealmBonusDays += RealmLifespanDelta;
+        InOutState.CurrentVessel.Lifespan.PermanentDamageDays += ActivityPayload->ConflictPermanentDamageDays;
         if (ActivityPayload->NewRealmId.IsValid())
         {
             InOutState.CurrentVessel.RealmId = ActivityPayload->NewRealmId;
@@ -160,6 +169,17 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
             Formation.IntegrityBps = ActivityPayload->FormationIntegrityBps;
             Formation.ExpiresAtMinute = NewElapsedMinutes + ActivityPayload->FormationDurationMinutes;
             InOutState.Formations.Add(MoveTemp(Formation));
+        }
+        if (ActivityPayload->ConflictOpponentId.IsValid())
+        {
+            FTruongSinhConflictRecord Record;
+            Record.CommandId = Command.CommandId;
+            Record.EncounterId = ActivityPayload->ActivityId;
+            Record.OpponentId = ActivityPayload->ConflictOpponentId;
+            Record.OutcomeId = ActivityPayload->OutcomeId;
+            Record.PermanentDamageDays = ActivityPayload->ConflictPermanentDamageDays;
+            Record.bOpponentDefeated = ActivityPayload->bConflictOpponentDefeated;
+            InOutState.ConflictRecords.Add(MoveTemp(Record));
         }
     }
     ++InOutState.WorldRevision;
@@ -232,6 +252,17 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     }
     FormationStates.Sort();
 
+    TArray<FString> ConflictStates;
+    ConflictStates.Reserve(State.ConflictRecords.Num());
+    for (const FTruongSinhConflictRecord& Conflict : State.ConflictRecords)
+    {
+        ConflictStates.Add(FString::Printf(TEXT("%s:%s:%s:%s:%lld:%d"),
+            *Conflict.CommandId.ToString(EGuidFormats::Digits), *Conflict.EncounterId.Value,
+            *Conflict.OpponentId.Value, *Conflict.OutcomeId.Value,
+            static_cast<long long>(Conflict.PermanentDamageDays), Conflict.bOpponentDefeated ? 1 : 0));
+    }
+    ConflictStates.Sort();
+
     const auto SortedStableIds = [](const TArray<FTruongSinhStableId>& Ids)
     {
         TArray<FString> Values;
@@ -251,7 +282,7 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     const TArray<FString> OwnedAssets = SortedStableIds(State.CurrentVessel.OwnedAssetIds);
 
     const FString Canonical = FString::Printf(
-        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s|outputs=%s|formations=%s"),
+        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s|outputs=%s|formations=%s|conflicts=%s"),
         State.SchemaVersion,
         static_cast<long long>(State.ElapsedMinutes),
         static_cast<long long>(State.ExplorationRemainderMillis),
@@ -281,7 +312,8 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
         *FString::Join(RngStreams, TEXT(",")),
         *FString::Join(CommandIds, TEXT(",")),
         *FString::Join(ActivityOutputs, TEXT(",")),
-        *FString::Join(FormationStates, TEXT(",")));
+        *FString::Join(FormationStates, TEXT(",")),
+        *FString::Join(ConflictStates, TEXT(",")));
 
     FTCHARToUTF8 Utf8(*Canonical);
     const FBlake3Hash Hash = FBlake3::HashBuffer(Utf8.Get(), static_cast<uint64>(Utf8.Length()));

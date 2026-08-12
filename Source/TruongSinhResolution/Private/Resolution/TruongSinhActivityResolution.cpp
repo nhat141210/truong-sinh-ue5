@@ -84,6 +84,10 @@ bool IsPlanValid(const FTruongSinhActivityPlan& Plan)
     {
         return false;
     }
+    if ((Plan.Type == ETruongSinhActivityType::Conflict) != Plan.ConflictOpponentId.IsValid())
+    {
+        return false;
+    }
     return true;
 }
 
@@ -250,6 +254,24 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
             Result.FormationDurationMinutes = Plan.FormationDurationMinutes;
             Result.FormationIntegrityBps = Result.Outcome == ETruongSinhResolutionOutcome::GreatSuccess ? 10000 :
                 Result.Outcome == ETruongSinhResolutionOutcome::Success ? 8500 : 6000;
+        }
+        break;
+    case ETruongSinhActivityType::Conflict:
+        Result.ConflictOpponentId = Plan.ConflictOpponentId;
+        switch (Result.Outcome)
+        {
+        case ETruongSinhResolutionOutcome::GreatSuccess:
+            Result.bConflictOpponentDefeated = true;
+            break;
+        case ETruongSinhResolutionOutcome::Success:
+            Result.bConflictOpponentDefeated = true;
+            break;
+        case ETruongSinhResolutionOutcome::PartialSuccess:
+            Result.ConflictPermanentDamageDays = 7;
+            break;
+        default:
+            Result.ConflictPermanentDamageDays = 30;
+            break;
         }
         break;
     default:

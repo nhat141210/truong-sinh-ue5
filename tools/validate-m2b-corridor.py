@@ -30,6 +30,7 @@ for required_label in (
     "VT_BreakthroughSite",
     "VT_AlchemySite",
     "VT_FormationSite",
+    "VT_ConflictSite",
     "VT_NPC_Caretaker_Temporary",
     "VT_Sun",
     "VT_SkyLight",

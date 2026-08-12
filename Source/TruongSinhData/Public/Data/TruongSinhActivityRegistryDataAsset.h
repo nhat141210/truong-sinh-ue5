@@ -59,6 +59,10 @@ struct TRUONGSINHDATA_API FTruongSinhActivityDefinition
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
     int64 FormationDurationMinutes = 0;
+
+    /** Canonical opponent selected by an authored conflict encounter. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ConflictOpponentId;
 };
 
 /**

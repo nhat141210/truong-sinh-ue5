@@ -96,6 +96,15 @@ struct TRUONGSINHSIMULATION_API FTruongSinhResolvedActivityCommitPayload : publi
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
     int64 FormationDurationMinutes = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ConflictOpponentId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 ConflictPermanentDamageDays = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    bool bConflictOpponentDefeated = false;
 };
 
 /** Persistent result of a committed recipe/activity output. Ordered by command GUID for save/hash determinism. */
@@ -145,6 +154,31 @@ struct TRUONGSINHSIMULATION_API FTruongSinhFormationState
     int64 ExpiresAtMinute = 0;
 };
 
+/** One authored encounter may commit once, regardless of presentation or command retries. */
+USTRUCT(BlueprintType)
+struct TRUONGSINHSIMULATION_API FTruongSinhConflictRecord
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FGuid CommandId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId EncounterId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OpponentId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OutcomeId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int64 PermanentDamageDays = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    bool bOpponentDefeated = false;
+};
+
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
 USTRUCT(BlueprintType)
 struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
@@ -187,6 +221,9 @@ struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     TArray<FTruongSinhFormationState> Formations;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    TArray<FTruongSinhConflictRecord> ConflictRecords;
 };
 
 /** Pure deterministic transition engine. It never reads world, frame timing or presentation state. */

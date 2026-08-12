@@ -114,6 +114,11 @@ def build_map():
         raise RuntimeError("Native TruongSinhFormationSite class is unavailable; build the Editor target first")
     spawn(formation_class, (1150.0, -540.0, 105.0), label="SMK_FormationSite")
 
+    conflict_class = unreal.load_class(None, "/Script/TruongSinhUE5.TruongSinhConflictSite")
+    if not conflict_class:
+        raise RuntimeError("Native TruongSinhConflictSite class is unavailable; build the Editor target first")
+    spawn(conflict_class, (1150.0, 540.0, 105.0), label="SMK_ConflictSite")
+
     level_subsystem.save_current_level()
     unreal.EditorAssetLibrary.save_asset(MAP_PACKAGE, only_if_is_dirty=False)
     unreal.log(f"Created and saved {MAP_PACKAGE}")

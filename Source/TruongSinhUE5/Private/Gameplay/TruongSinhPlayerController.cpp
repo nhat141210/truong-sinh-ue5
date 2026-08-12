@@ -54,6 +54,11 @@ bool TryGetActivityType(const FTruongSinhActivityDefinition& Definition, ETruong
         OutType = ETruongSinhActivityType::Formation;
         return true;
     }
+    if (Definition.ResolverId == TEXT("conflict"))
+    {
+        OutType = ETruongSinhActivityType::Conflict;
+        return true;
+    }
     return false;
 }
 
@@ -167,6 +172,8 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
                 ? NSLOCTEXT("TruongSinh", "AlchemyPrompt", "Luyện đan Thanh Tâm")
             : Definition->ResolverId == TEXT("formation")
                 ? NSLOCTEXT("TruongSinh", "FormationPrompt", "Dựng Tụ Linh Trận")
+            : Definition->ResolverId == TEXT("conflict")
+                ? NSLOCTEXT("TruongSinh", "ConflictPrompt", "Giải quyết đấu pháp")
             : NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ")) : FText::GetEmpty(),
         bHasRegisteredOffer);
 }
@@ -279,6 +286,7 @@ void ATruongSinhPlayerController::TryInteract()
     Plan.MaximumOutputUnits = Definition->MaximumOutputUnits;
     Plan.FormationEffectId = Definition->FormationEffectId;
     Plan.FormationDurationMinutes = Definition->FormationDurationMinutes;
+    Plan.ConflictOpponentId = Definition->ConflictOpponentId;
 
     FTruongSinhActivitySnapshot Snapshot;
     Snapshot.PerformerPower = FMath::Min<int64>(MAX_int64 - 6000, Before.CurrentVessel.CultivationUnits) + 6000;
@@ -314,6 +322,9 @@ void ATruongSinhPlayerController::TryInteract()
         CommitPayload.FormationEffectId = Resolution.FormationEffectId;
         CommitPayload.FormationIntegrityBps = Resolution.FormationIntegrityBps;
         CommitPayload.FormationDurationMinutes = Resolution.FormationDurationMinutes;
+        CommitPayload.ConflictOpponentId = Resolution.ConflictOpponentId;
+        CommitPayload.ConflictPermanentDamageDays = Resolution.ConflictPermanentDamageDays;
+        CommitPayload.bConflictOpponentDefeated = Resolution.bConflictOpponentDefeated;
         Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(CommitPayload);
     }
     else
@@ -355,6 +366,12 @@ void ATruongSinhPlayerController::TryInteract()
         *Resolution.FormationEffectId.Value,
         Resolution.FormationIntegrityBps / 100,
         static_cast<long long>(Resolution.FormationDurationMinutes),
+        static_cast<long long>(Resolution.TimeAdvancedMinutes),
+        *SaveStatus) : ActivityType == ETruongSinhActivityType::Conflict ? FString::Printf(
+        TEXT("Đối thủ %s\n%s · Tổn thọ %lld ngày · Thời gian +%lld phút%s"),
+        *Resolution.ConflictOpponentId.Value,
+        Resolution.bConflictOpponentDefeated ? TEXT("Đã chế phục") : TEXT("Chưa chế phục"),
+        static_cast<long long>(Resolution.ConflictPermanentDamageDays),
         static_cast<long long>(Resolution.TimeAdvancedMinutes),
         *SaveStatus) : FString::Printf(
         TEXT("Điểm %lld / %lld\nThời gian +%lld phút · Thiên đạo #%lld%s"),

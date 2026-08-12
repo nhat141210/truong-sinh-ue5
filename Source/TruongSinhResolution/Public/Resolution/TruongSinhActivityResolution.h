@@ -94,6 +94,9 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhActivityPlan
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
     int64 FormationDurationMinutes = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ConflictOpponentId;
 };
 
 /** Immutable canonical values supplied by simulation. Every score uses the same fixed-point units. */
@@ -223,6 +226,15 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     int64 FormationDurationMinutes = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ConflictOpponentId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
+    int64 ConflictPermanentDamageDays = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    bool bConflictOpponentDefeated = false;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId OutcomeId;

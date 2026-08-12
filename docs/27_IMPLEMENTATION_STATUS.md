@@ -8,7 +8,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 
 - UE 5.8.1 changelist `56057345`; VS 2022 17.14.37; MSVC 14.44.35207; Windows SDK 10.0.26100.0.
 - UBT `TruongSinhUE5Editor Win64 Development` và `TruongSinhUE5 Win64 Development` pass.
-- Automation report: 16/16 Success, 0 warning/fail/not-run; gồm mouse-capture defaults, deterministic interaction selection và formation state/save/expiry.
+- Automation report: 17/17 Success, 0 warning/fail/not-run; gồm mouse-capture defaults, deterministic interaction selection, formation và conflict canonical state/save.
 - Map thật `/Game/Maps/Dev/L_Dev_Smoke` có floor collision, PlayerStart, directional/sky/atmosphere/fog và cultivation interaction site.
 - Enhanced Input native: WASD, mouse look, Space, E và Esc; PlayerController quản lý mouse capture/lock và pause cursor.
 - Native HUD hiển thị canonical realm/cultivation/time/revision, contextual E prompt, result summary và pause overlay.
@@ -22,9 +22,10 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 - M2B có map riêng `/Game/Maps/VisualTarget/L_M2B_Corridor`: gate, corridor, water, ánh sáng/sương, caretaker tạm và cultivation site. Map qua structural validation, ResavePackages và được nạp bằng Development executable độc lập.
 - HUD native đã dùng frame ngọc/vàng có provenance rõ ràng; `realm.mortal` hiển thị là `PHÀM NHÂN` thay vì stable ID kỹ thuật.
 - M3 có lát cắt đột phá Trúc Cơ chạy qua chung pipeline activity: cần 800 tu vi, resolve deterministic, commit realm + thọ nguyên, autosave/pending replay và HUD result. Payload có precondition realm canonical nên không thể lặp lại để farm thọ nguyên.
-- Activity registry Data Asset `/Game/Data/DA_ActivityRegistry` giờ là nguồn setup cho cultivation, breakthrough, alchemy và formation. Bản Windows đã cook/load registry với 4 definitions; interaction không dùng fallback hard-code nếu registry lỗi/mất.
+- Activity registry Data Asset `/Game/Data/DA_ActivityRegistry` giờ là nguồn setup cho cultivation, breakthrough, alchemy, formation và conflict. Bản Windows đã cook/load registry với 5 definitions; interaction không dùng fallback hard-code nếu registry lỗi/mất.
 - Luyện đan Thanh Tâm có furnace tương tác trong hai map dev, resolve deterministic và lưu output pill với quantity, quality, impurity trong canonical ledger. Ledger được hash/save/load; retry command không thể tạo output lần hai.
 - Tụ Linh Trận có điểm tương tác trong smoke/M2B, resolve deterministic và commit effect, integrity, expiry theo game time vào canonical state. Formation được hash/save/load và tự gỡ khi hết hạn.
+- Đấu pháp Vân Chưởng có điểm tương tác trong smoke/M2B, bounded deterministic RNG, opponent/outcome record canonical và hậu quả tổn thọ. Conflict không cấp nhầm tu vi; record được hash/save/load và retry không cộng hậu quả lần hai.
 
 ## Chưa được gọi là hoàn thành cuối
 
@@ -41,7 +42,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 | M1 Windows native | COMPLETE (smoke evidence) | packaged build không thuộc M1 |
 | M2A Golden loop | IMPLEMENTED, RUNTIME SMOKE | cần manual interaction/Continue capture để đóng gate UX |
 | M2B Visual target | FOUNDATION VERIFIED | corridor loadable + temporary NPC/cultivation site + HUD frame; còn production art, activity cue, RTX3060 profile |
-| M3 Activity framework | SLICE PASS | registry Data Asset + cultivation/breakthrough/alchemy/formation chạy chung pipeline; còn conflict runtime |
+| M3 Activity framework | WINDOWS VERIFIED | 5 activity chạy chung registry → resolve → commit → replay/save pipeline; tránh đấu vẫn là slice riêng |
 | M4 Living world | NOT STARTED | canonical NPC/event/social/economy |
 | M5 Lifespan/soul | SOURCE PROOF | gameplay content/UI/save migration |
 | M6 Demo | NOT STARTED | four zones và authored content |
@@ -50,4 +51,4 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 
 1. Mở PIE, đi bộ/nhìn/nhảy/pause và thực hiện một cultivation interaction bằng E.
 2. Đóng/mở Standalone, xác nhận Continue hiện summary và tu vi không cộng hai lần.
-3. Thêm conflict resolver vào pipeline activity chung trước khi mở rộng world/NPC; đồng thời thay primitive/Manny tạm bằng art production đã duyệt.
+3. Thêm route tránh đấu (đàm phán/trả giá/bỏ chạy/nhờ tông môn) trước khi mở rộng world/NPC; đồng thời thay primitive/Manny tạm bằng art production đã duyệt.
