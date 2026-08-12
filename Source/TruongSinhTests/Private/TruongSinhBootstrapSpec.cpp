@@ -767,6 +767,7 @@ bool FTruongSinhConflictCommitSpec::RunTest(const FString& Parameters)
     Payload.ConflictOpponentId = Resolution.ConflictOpponentId;
     Payload.ConflictPermanentDamageDays = Resolution.ConflictPermanentDamageDays;
     Payload.bConflictOpponentDefeated = Resolution.bConflictOpponentDefeated;
+    Payload.ConflictApproachId = Resolution.ConflictApproachId;
     Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
 
     const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
@@ -789,6 +790,86 @@ bool FTruongSinhConflictCommitSpec::RunTest(const FString& Parameters)
     TestTrue(TEXT("Conflict state restores"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
     TestEqual(TEXT("Save retains conflict record"), Loaded.Simulation.ConflictRecords.Num(), 1);
     TestEqual(TEXT("Save retains damage"), Loaded.Simulation.CurrentVessel.Lifespan.PermanentDamageDays, 30ll);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhConflictAvoidanceSpec,
+    "TruongSinh.Activity.ConflictAvoidanceRoutes",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhConflictAvoidanceSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    FTruongSinhStableId Compensation;
+    Compensation.Value = TEXT("asset.compensation.cloud_palm_pouch");
+    State.CurrentVessel.OwnedAssetIds.Add(Compensation);
+
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(111, 112, 113, 114);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitResolvedActivityActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Type = ETruongSinhActivityType::Conflict;
+    Plan.ActivityId.Value = TEXT("activity.conflict.cloud_palm_trial");
+    Plan.MethodId.Value = TEXT("method.compensation");
+    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
+    Plan.ConflictOpponentId.Value = TEXT("npc.rival.cloud_palm_disciple");
+    Plan.ConflictApproach = ETruongSinhConflictApproach::Pay;
+    Plan.RequiredOwnedAssetId = Compensation;
+    Plan.DurationMinutes = 10;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 1000;
+    Snapshot.DifficultyOrTargetPower = 10000;
+    Snapshot.bHasRequiredOwnedAsset = true;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestEqual(TEXT("Eligible compensation guarantees success"), Resolution.Outcome, ETruongSinhResolutionOutcome::Success);
+    TestTrue(TEXT("Compensation avoids conflict"), Resolution.bConflictAvoided);
+    TestEqual(TEXT("Compensation asset is selected for atomic consumption"),
+        Resolution.ConsumedOwnedAssetId.Value, Compensation.Value);
+    TestFalse(TEXT("Avoidance never defeats opponent"), Resolution.bConflictOpponentDefeated);
+
+    FTruongSinhResolvedActivityCommitPayload Payload;
+    Payload.ActivityId = Plan.ActivityId;
+    Payload.RequiredCurrentRealmId = State.CurrentVessel.RealmId;
+    Payload.Minutes = Resolution.TimeAdvancedMinutes;
+    Payload.OutcomeId = Resolution.OutcomeId;
+    Payload.ReplayId = Resolution.ReplayId;
+    Payload.ConflictOpponentId = Resolution.ConflictOpponentId;
+    Payload.ConflictApproachId = Resolution.ConflictApproachId;
+    Payload.RequiredOwnedAssetId = Plan.RequiredOwnedAssetId;
+    Payload.ConsumedOwnedAssetId = Resolution.ConsumedOwnedAssetId;
+    Payload.bConflictAvoided = Resolution.bConflictAvoided;
+    Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
+    const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Compensation route commits"), Commit.Status, ETruongSinhActionStatus::Committed);
+    TestFalse(TEXT("Compensation asset is consumed"), State.CurrentVessel.OwnedAssetIds.Contains(Compensation));
+    TestEqual(TEXT("Avoidance record is canonical"), State.ConflictRecords.Num(), 1);
+    if (State.ConflictRecords.Num() == 1)
+    {
+        TestTrue(TEXT("Record remembers avoidance"), State.ConflictRecords[0].bConflictAvoided);
+        TestEqual(TEXT("Record remembers consumed asset"), State.ConflictRecords[0].ConsumedAssetId.Value,
+            Compensation.Value);
+    }
+
+    FTruongSinhSimulationState Stale = FTruongSinhGameSimulation::CreateNewGame(141210);
+    Plan.Action.CommandId = FGuid(115, 116, 117, 118);
+    Plan.Action.ExpectedWorldRevision = Stale.WorldRevision;
+    const FTruongSinhActionResult Rejected = FTruongSinhGameSimulation::Execute(Stale, Plan.Action);
+    TestEqual(TEXT("Stale payment precondition rejects"), Rejected.Status, ETruongSinhActionStatus::Rejected);
+    TestEqual(TEXT("Rejected route consumes no time"), Stale.ElapsedMinutes, 0ll);
+
+    FTruongSinhSaveGameV2 Save;
+    Save.Simulation = State;
+    Save.PayloadHash = FTruongSinhGameSimulation::ComputeStateHash(State);
+    FString Json;
+    FString Error;
+    TestTrue(TEXT("Avoidance state serializes"), FTruongSinhSaveJsonCodecV2::Serialize(Save, Json, Error));
+    FTruongSinhSaveGameV2 Loaded;
+    TestTrue(TEXT("Avoidance state restores"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
+    TestEqual(TEXT("Save retains avoidance record"), Loaded.Simulation.ConflictRecords.Num(), 1);
     return true;
 }
 

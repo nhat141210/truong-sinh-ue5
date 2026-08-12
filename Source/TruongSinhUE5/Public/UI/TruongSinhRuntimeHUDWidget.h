@@ -32,6 +32,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Truong Sinh|UI")
     void SetPaused(bool bPaused);
 
+    /** Eligibility copy is supplied by the controller; this widget never evaluates gameplay rules. */
+    void ShowConflictPlanner(const TArray<FText>& EligibilityLines);
+    void HideConflictPlanner();
+
     /** Pulls read-only values from the canonical simulation facade. */
     UFUNCTION(BlueprintCallable, Category = "Truong Sinh|UI")
     void RefreshState();
@@ -76,6 +80,12 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<UBorder> PauseOverlay;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UOverlay> ConflictPlannerRoot;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UTextBlock>> ConflictOptionTexts;
 
     UPROPERTY(EditDefaultsOnly, Category = "Truong Sinh|UI")
     TObjectPtr<UTexture2D> OrnateFrameTexture;

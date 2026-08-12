@@ -72,6 +72,11 @@ ATruongSinhCharacter::ATruongSinhCharacter()
     JumpAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Jump"));
     InteractAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Interact"));
     PauseAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Pause"));
+    ConflictApproach1Action = CreateDefaultSubobject<UInputAction>(TEXT("IA_ConflictApproach1"));
+    ConflictApproach2Action = CreateDefaultSubobject<UInputAction>(TEXT("IA_ConflictApproach2"));
+    ConflictApproach3Action = CreateDefaultSubobject<UInputAction>(TEXT("IA_ConflictApproach3"));
+    ConflictApproach4Action = CreateDefaultSubobject<UInputAction>(TEXT("IA_ConflictApproach4"));
+    ConflictApproach5Action = CreateDefaultSubobject<UInputAction>(TEXT("IA_ConflictApproach5"));
 
     LookYawAction->ValueType = EInputActionValueType::Axis1D;
     LookPitchAction->ValueType = EInputActionValueType::Axis1D;
@@ -86,6 +91,11 @@ ATruongSinhCharacter::ATruongSinhCharacter()
     ExplorationMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
     ExplorationMappingContext->MapKey(InteractAction, EKeys::E);
     ExplorationMappingContext->MapKey(PauseAction, EKeys::Escape);
+    ExplorationMappingContext->MapKey(ConflictApproach1Action, EKeys::One);
+    ExplorationMappingContext->MapKey(ConflictApproach2Action, EKeys::Two);
+    ExplorationMappingContext->MapKey(ConflictApproach3Action, EKeys::Three);
+    ExplorationMappingContext->MapKey(ConflictApproach4Action, EKeys::Four);
+    ExplorationMappingContext->MapKey(ConflictApproach5Action, EKeys::Five);
 }
 
 void ATruongSinhCharacter::BeginPlay()
@@ -150,6 +160,16 @@ void ATruongSinhCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
     EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
     EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &ATruongSinhCharacter::Interact);
     EnhancedInput->BindAction(PauseAction, ETriggerEvent::Started, this, &ATruongSinhCharacter::TogglePause);
+    EnhancedInput->BindAction(ConflictApproach1Action, ETriggerEvent::Started, this,
+        &ATruongSinhCharacter::SelectConflictApproach1);
+    EnhancedInput->BindAction(ConflictApproach2Action, ETriggerEvent::Started, this,
+        &ATruongSinhCharacter::SelectConflictApproach2);
+    EnhancedInput->BindAction(ConflictApproach3Action, ETriggerEvent::Started, this,
+        &ATruongSinhCharacter::SelectConflictApproach3);
+    EnhancedInput->BindAction(ConflictApproach4Action, ETriggerEvent::Started, this,
+        &ATruongSinhCharacter::SelectConflictApproach4);
+    EnhancedInput->BindAction(ConflictApproach5Action, ETriggerEvent::Started, this,
+        &ATruongSinhCharacter::SelectConflictApproach5);
 }
 
 void ATruongSinhCharacter::MoveForward(const FInputActionValue& Value)
@@ -220,5 +240,45 @@ void ATruongSinhCharacter::TogglePause()
     if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
     {
         PlayerController->TogglePauseMenu();
+    }
+}
+
+void ATruongSinhCharacter::SelectConflictApproach1()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->SelectConflictApproach(1);
+    }
+}
+
+void ATruongSinhCharacter::SelectConflictApproach2()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->SelectConflictApproach(2);
+    }
+}
+
+void ATruongSinhCharacter::SelectConflictApproach3()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->SelectConflictApproach(3);
+    }
+}
+
+void ATruongSinhCharacter::SelectConflictApproach4()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->SelectConflictApproach(4);
+    }
+}
+
+void ATruongSinhCharacter::SelectConflictApproach5()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->SelectConflictApproach(5);
     }
 }

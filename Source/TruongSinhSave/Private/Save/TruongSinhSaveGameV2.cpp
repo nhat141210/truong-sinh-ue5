@@ -250,6 +250,10 @@ bool FTruongSinhSaveJsonCodecV2::Serialize(
         Item->SetStringField(TEXT("outcome"), Conflict.OutcomeId.Value);
         SetInteger(Item, TEXT("permanent_damage_days"), Conflict.PermanentDamageDays);
         Item->SetBoolField(TEXT("opponent_defeated"), Conflict.bOpponentDefeated);
+        Item->SetStringField(TEXT("approach"), Conflict.ApproachId.Value);
+        Item->SetStringField(TEXT("consumed_asset"), Conflict.ConsumedAssetId.Value);
+        Item->SetStringField(TEXT("assisting_sect"), Conflict.AssistingSectId.Value);
+        Item->SetBoolField(TEXT("avoided"), Conflict.bConflictAvoided);
         ConflictValues.Add(MakeShared<FJsonValueObject>(Item));
     }
     Simulation->SetArrayField(TEXT("conflicts"), ConflictValues);
@@ -509,8 +513,14 @@ bool FTruongSinhSaveJsonCodecV2::Deserialize(
                 !GetStableId(Item, TEXT("outcome"), Conflict.OutcomeId, false, OutError) ||
                 !GetInteger(Item, TEXT("permanent_damage_days"), Conflict.PermanentDamageDays, OutError) ||
                 !Item->TryGetBoolField(TEXT("opponent_defeated"), Conflict.bOpponentDefeated) ||
+                !GetStableId(Item, TEXT("approach"), Conflict.ApproachId, true, OutError) ||
+                !GetStableId(Item, TEXT("consumed_asset"), Conflict.ConsumedAssetId, true, OutError) ||
+                !GetStableId(Item, TEXT("assisting_sect"), Conflict.AssistingSectId, true, OutError) ||
+                !Item->TryGetBoolField(TEXT("avoided"), Conflict.bConflictAvoided) ||
                 ConflictCommandIds.Contains(Conflict.CommandId) || !CommandIds.Contains(Conflict.CommandId) ||
-                Conflict.PermanentDamageDays < 0)
+                Conflict.PermanentDamageDays < 0 ||
+                (Conflict.bConflictAvoided &&
+                    (Conflict.PermanentDamageDays != 0 || Conflict.bOpponentDefeated)))
             {
                 OutError = TEXT("Invalid or duplicate conflict record.");
                 return false;

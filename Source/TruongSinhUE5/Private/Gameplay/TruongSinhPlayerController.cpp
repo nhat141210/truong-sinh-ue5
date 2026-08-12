@@ -79,6 +79,61 @@ FText OutcomeText(const ETruongSinhResolutionOutcome Outcome)
     }
 }
 
+const TCHAR* ConflictRouteId(const ETruongSinhConflictApproach Approach)
+{
+    switch (Approach)
+    {
+    case ETruongSinhConflictApproach::Negotiate:
+        return TEXT("conflict.route.negotiate");
+    case ETruongSinhConflictApproach::Pay:
+        return TEXT("conflict.route.pay");
+    case ETruongSinhConflictApproach::Flee:
+        return TEXT("conflict.route.flee");
+    case ETruongSinhConflictApproach::SectAssist:
+        return TEXT("conflict.route.sect_assist");
+    default:
+        return TEXT("");
+    }
+}
+
+const FTruongSinhConflictRouteDefinition* FindConflictRoute(
+    const FTruongSinhActivityDefinition& Definition,
+    const ETruongSinhConflictApproach Approach)
+{
+    const FString ExpectedId(ConflictRouteId(Approach));
+    return Definition.ConflictAvoidanceRoutes.FindByPredicate(
+        [&ExpectedId](const FTruongSinhConflictRouteDefinition& Route)
+        {
+            return Route.RouteId.Value == ExpectedId;
+        });
+}
+
+FText ConflictEligibilityText(const bool bEligible, const FText& AvailableDetail, const FText& LockedDetail)
+{
+    return FText::Format(
+        bEligible
+            ? NSLOCTEXT("TruongSinh", "ConflictRouteAvailable", "SẴN SÀNG · {0}")
+            : NSLOCTEXT("TruongSinh", "ConflictRouteLocked", "CHƯA ĐỦ ĐIỀU KIỆN · {0}"),
+        bEligible ? AvailableDetail : LockedDetail);
+}
+
+const TCHAR* ConflictApproachText(const ETruongSinhConflictApproach Approach)
+{
+    switch (Approach)
+    {
+    case ETruongSinhConflictApproach::Negotiate:
+        return TEXT("Đàm phán");
+    case ETruongSinhConflictApproach::Pay:
+        return TEXT("Bồi thường");
+    case ETruongSinhConflictApproach::Flee:
+        return TEXT("Bỏ chạy");
+    case ETruongSinhConflictApproach::SectAssist:
+        return TEXT("Nhờ tông môn");
+    default:
+        return TEXT("Đấu pháp");
+    }
+}
+
 }
 
 ATruongSinhPlayerController::ATruongSinhPlayerController(const FObjectInitializer& ObjectInitializer)
@@ -158,6 +213,11 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
     {
         return;
     }
+    if (bConflictPlannerOpen)
+    {
+        RuntimeHUD->SetInteractionPrompt(FText::GetEmpty(), false);
+        return;
+    }
 
     AActor* Provider = nullptr;
     FTruongSinhInteractionOffer Offer;
@@ -194,6 +254,13 @@ void ATruongSinhPlayerController::ApplyGameplayMouseCapture()
 
 void ATruongSinhPlayerController::TryInteract()
 {
+    if (bConflictPlannerOpen && SelectedConflictApproachIndex == INDEX_NONE)
+    {
+        return;
+    }
+    const int32 RequestedConflictApproachIndex = SelectedConflictApproachIndex;
+    SelectedConflictApproachIndex = INDEX_NONE;
+
     AActor* Provider = nullptr;
     FTruongSinhInteractionOffer Offer;
     if (!FindBestInteraction(Provider, Offer))
@@ -239,6 +306,55 @@ void ATruongSinhPlayerController::TryInteract()
         ClientMessage(TEXT("Resolver activity chưa được đăng ký."));
         return;
     }
+    if (RequestedConflictApproachIndex != INDEX_NONE && ActivityType != ETruongSinhActivityType::Conflict)
+    {
+        ClientMessage(TEXT("Điểm xung đột không còn trong tầm nhìn; lựa chọn đã được hủy."));
+        return;
+    }
+    if (ActivityType == ETruongSinhActivityType::Conflict && RequestedConflictApproachIndex == INDEX_NONE)
+    {
+        const FTruongSinhConflictRouteDefinition* NegotiateRoute =
+            FindConflictRoute(*Definition, ETruongSinhConflictApproach::Negotiate);
+        const FTruongSinhConflictRouteDefinition* PayRoute =
+            FindConflictRoute(*Definition, ETruongSinhConflictApproach::Pay);
+        const FTruongSinhConflictRouteDefinition* SectRoute =
+            FindConflictRoute(*Definition, ETruongSinhConflictApproach::SectAssist);
+        const bool bCanFight = Before.CurrentVessel.CultivationUnits >= Definition->MinimumCultivationUnits;
+        const bool bCanNegotiate = NegotiateRoute &&
+            Before.CurrentVessel.RelationshipIds.Contains(NegotiateRoute->RequiredRelationshipId);
+        const bool bCanPay = PayRoute &&
+            Before.CurrentVessel.OwnedAssetIds.Contains(PayRoute->RequiredOwnedAssetId);
+        const bool bCanUseSect = SectRoute && Before.CurrentVessel.SectId.IsValid();
+
+        ConflictApproachEligibility = { bCanFight, bCanNegotiate, bCanPay, true, bCanUseSect };
+        TArray<FText> EligibilityLines;
+        EligibilityLines.Reserve(5);
+        EligibilityLines.Add(ConflictEligibilityText(bCanFight,
+            NSLOCTEXT("TruongSinh", "ConflictFightAvailable", "dùng tu vi và chuẩn bị hiện tại"),
+            FText::Format(NSLOCTEXT("TruongSinh", "ConflictFightLocked", "cần ít nhất {0} tu vi"),
+                FText::AsNumber(Definition->MinimumCultivationUnits))));
+        EligibilityLines.Add(ConflictEligibilityText(bCanNegotiate,
+            NSLOCTEXT("TruongSinh", "ConflictNegotiateAvailable", "đã có quan hệ với đối thủ"),
+            NSLOCTEXT("TruongSinh", "ConflictNegotiateLocked", "cần tạo quan hệ với đối thủ")));
+        EligibilityLines.Add(ConflictEligibilityText(bCanPay,
+            NSLOCTEXT("TruongSinh", "ConflictPayAvailable", "có vật phẩm bồi thường; sẽ bị tiêu thụ"),
+            NSLOCTEXT("TruongSinh", "ConflictPayLocked", "thiếu vật phẩm bồi thường")));
+        EligibilityLines.Add(ConflictEligibilityText(true,
+            NSLOCTEXT("TruongSinh", "ConflictFleeAvailable", "luôn có thể thử; thất bại có thể bị thương"),
+            FText::GetEmpty()));
+        EligibilityLines.Add(ConflictEligibilityText(bCanUseSect,
+            NSLOCTEXT("TruongSinh", "ConflictSectAvailable", "tông môn hiện tại sẽ can thiệp"),
+            NSLOCTEXT("TruongSinh", "ConflictSectLocked", "cần gia nhập một tông môn")));
+
+        bConflictPlannerOpen = true;
+        if (RuntimeHUD)
+        {
+            RuntimeHUD->SetInteractionPrompt(FText::GetEmpty(), false);
+            RuntimeHUD->ShowConflictPlanner(EligibilityLines);
+        }
+        ClientMessage(TEXT("Chọn cách ứng đối bằng phím 1–5 · Esc để quay lại."));
+        return;
+    }
     const bool bBreakthrough = IsBreakthroughDefinition(*Definition);
     if (bBreakthrough && Before.CurrentVessel.RealmId.Value != TEXT("realm.mortal"))
     {
@@ -264,7 +380,10 @@ void ATruongSinhPlayerController::TryInteract()
         ClientMessage(Requirement.ToString());
         return;
     }
-    if (Before.CurrentVessel.CultivationUnits < Definition->MinimumCultivationUnits)
+    const bool bNeedsActivityCultivation = ActivityType != ETruongSinhActivityType::Conflict ||
+        RequestedConflictApproachIndex == static_cast<int32>(ETruongSinhConflictApproach::Fight) + 1;
+    if (bNeedsActivityCultivation &&
+        Before.CurrentVessel.CultivationUnits < Definition->MinimumCultivationUnits)
     {
         ClientMessage(FString::Printf(TEXT("Cần ít nhất %lld tu vi cho hoạt động này."),
             static_cast<long long>(Definition->MinimumCultivationUnits)));
@@ -287,14 +406,47 @@ void ATruongSinhPlayerController::TryInteract()
     Plan.FormationEffectId = Definition->FormationEffectId;
     Plan.FormationDurationMinutes = Definition->FormationDurationMinutes;
     Plan.ConflictOpponentId = Definition->ConflictOpponentId;
+    int64 ConflictDifficulty = Definition->DifficultyOrTargetPower;
+    if (ActivityType == ETruongSinhActivityType::Conflict)
+    {
+        if (RequestedConflictApproachIndex < 1 || RequestedConflictApproachIndex > 5)
+        {
+            ClientMessage(TEXT("Lựa chọn ứng đối không hợp lệ."));
+            return;
+        }
+        Plan.ConflictApproach = static_cast<ETruongSinhConflictApproach>(RequestedConflictApproachIndex - 1);
+        if (Plan.ConflictApproach != ETruongSinhConflictApproach::Fight)
+        {
+            const FTruongSinhConflictRouteDefinition* Route = FindConflictRoute(*Definition, Plan.ConflictApproach);
+            if (!Route)
+            {
+                ClientMessage(TEXT("Tuyến ứng đối chưa được đăng ký."));
+                return;
+            }
+            Plan.DurationMinutes = Route->DurationMinutes;
+            ConflictDifficulty = Route->DifficultyOrTargetPower;
+            Plan.RequiredRelationshipId = Route->RequiredRelationshipId;
+            Plan.RequiredOwnedAssetId = Route->RequiredOwnedAssetId;
+            if (Route->bRequiresSectMembership)
+            {
+                Plan.RequiredSectId = Before.CurrentVessel.SectId;
+            }
+        }
+    }
 
     FTruongSinhActivitySnapshot Snapshot;
     Snapshot.PerformerPower = FMath::Min<int64>(MAX_int64 - 6000, Before.CurrentVessel.CultivationUnits) + 6000;
-    Snapshot.DifficultyOrTargetPower = Definition->DifficultyOrTargetPower;
+    Snapshot.DifficultyOrTargetPower = ConflictDifficulty;
     Snapshot.TechniqueModifierUnits = Definition->TechniqueModifierUnits + Before.Soul.KnownTechniqueIds.Num() * 150;
     Snapshot.PreparationModifierUnits = Definition->PreparationModifierUnits;
     Snapshot.EnvironmentModifierUnits = Definition->EnvironmentModifierUnits;
     Snapshot.MasterSeed = Before.Rng.MasterSeed;
+    Snapshot.bHasOpponentRelationship = Plan.RequiredRelationshipId.IsValid() &&
+        Before.CurrentVessel.RelationshipIds.Contains(Plan.RequiredRelationshipId);
+    Snapshot.bHasRequiredOwnedAsset = Plan.RequiredOwnedAssetId.IsValid() &&
+        Before.CurrentVessel.OwnedAssetIds.Contains(Plan.RequiredOwnedAssetId);
+    Snapshot.bHasSectSupport = Plan.RequiredSectId.IsValid() &&
+        Before.CurrentVessel.SectId == Plan.RequiredSectId;
 
     const FTruongSinhActivityPreview Preview = FTruongSinhAutoResolver::Preview(Snapshot, Plan);
     if (!Preview.bEligible)
@@ -325,6 +477,13 @@ void ATruongSinhPlayerController::TryInteract()
         CommitPayload.ConflictOpponentId = Resolution.ConflictOpponentId;
         CommitPayload.ConflictPermanentDamageDays = Resolution.ConflictPermanentDamageDays;
         CommitPayload.bConflictOpponentDefeated = Resolution.bConflictOpponentDefeated;
+        CommitPayload.ConflictApproachId = Resolution.ConflictApproachId;
+        CommitPayload.RequiredRelationshipId = Plan.RequiredRelationshipId;
+        CommitPayload.RequiredOwnedAssetId = Plan.RequiredOwnedAssetId;
+        CommitPayload.RequiredSectId = Plan.RequiredSectId;
+        CommitPayload.ConsumedOwnedAssetId = Resolution.ConsumedOwnedAssetId;
+        CommitPayload.AssistingSectId = Resolution.AssistingSectId;
+        CommitPayload.bConflictAvoided = Resolution.bConflictAvoided;
         Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(CommitPayload);
     }
     else
@@ -347,6 +506,15 @@ void ATruongSinhPlayerController::TryInteract()
     FString SaveError;
     const bool bSaved = SaveCanonicalState(SaveError);
     const FString SaveStatus = bSaved ? TEXT(" · Đã lưu") : FString::Printf(TEXT(" · Lỗi lưu: %s"), *SaveError);
+    const FString ConflictResultDetails = FString::Printf(
+        TEXT("Đối thủ %s · %s\n%s · Tổn thọ %lld ngày · Thời gian +%lld phút%s"),
+        *Resolution.ConflictOpponentId.Value,
+        ConflictApproachText(Plan.ConflictApproach),
+        Resolution.bConflictAvoided ? TEXT("Đã tránh giao chiến") :
+            Resolution.bConflictOpponentDefeated ? TEXT("Đã chế phục") : TEXT("Chưa chế phục"),
+        static_cast<long long>(Resolution.ConflictPermanentDamageDays),
+        static_cast<long long>(Resolution.TimeAdvancedMinutes),
+        *SaveStatus);
     const FString ResultDetails = bBreakthrough ? FString::Printf(
         TEXT("Điểm %lld / %lld\nThọ nguyên +%lld ngày · Thời gian +%lld phút · Thiên đạo #%lld%s"),
         static_cast<long long>(Resolution.FinalScore),
@@ -367,13 +535,7 @@ void ATruongSinhPlayerController::TryInteract()
         Resolution.FormationIntegrityBps / 100,
         static_cast<long long>(Resolution.FormationDurationMinutes),
         static_cast<long long>(Resolution.TimeAdvancedMinutes),
-        *SaveStatus) : ActivityType == ETruongSinhActivityType::Conflict ? FString::Printf(
-        TEXT("Đối thủ %s\n%s · Tổn thọ %lld ngày · Thời gian +%lld phút%s"),
-        *Resolution.ConflictOpponentId.Value,
-        Resolution.bConflictOpponentDefeated ? TEXT("Đã chế phục") : TEXT("Chưa chế phục"),
-        static_cast<long long>(Resolution.ConflictPermanentDamageDays),
-        static_cast<long long>(Resolution.TimeAdvancedMinutes),
-        *SaveStatus) : FString::Printf(
+        *SaveStatus) : ActivityType == ETruongSinhActivityType::Conflict ? ConflictResultDetails : FString::Printf(
         TEXT("Điểm %lld / %lld\nThời gian +%lld phút · Thiên đạo #%lld%s"),
         static_cast<long long>(Resolution.FinalScore),
         static_cast<long long>(Resolution.TargetScore),
@@ -396,6 +558,40 @@ void ATruongSinhPlayerController::TryInteract()
         static_cast<long long>(Resolution.TimeAdvancedMinutes),
         static_cast<long long>(Commit.NewWorldRevision),
         *SaveStatus));
+}
+
+void ATruongSinhPlayerController::SelectConflictApproach(const int32 OptionIndex)
+{
+    if (!bConflictPlannerOpen || OptionIndex < 1 || OptionIndex > 5)
+    {
+        return;
+    }
+    if (!ConflictApproachEligibility.IsValidIndex(OptionIndex - 1) ||
+        !ConflictApproachEligibility[OptionIndex - 1])
+    {
+        ClientMessage(TEXT("Cách ứng đối này chưa đủ điều kiện."));
+        return;
+    }
+
+    SelectedConflictApproachIndex = OptionIndex;
+    bConflictPlannerOpen = false;
+    ConflictApproachEligibility.Reset();
+    if (RuntimeHUD)
+    {
+        RuntimeHUD->HideConflictPlanner();
+    }
+    TryInteract();
+}
+
+void ATruongSinhPlayerController::CloseConflictPlanner()
+{
+    bConflictPlannerOpen = false;
+    SelectedConflictApproachIndex = INDEX_NONE;
+    ConflictApproachEligibility.Reset();
+    if (RuntimeHUD)
+    {
+        RuntimeHUD->HideConflictPlanner();
+    }
 }
 
 bool ATruongSinhPlayerController::FindBestInteraction(
@@ -436,6 +632,12 @@ bool ATruongSinhPlayerController::FindBestInteraction(
 
 void ATruongSinhPlayerController::TogglePauseMenu()
 {
+    if (bConflictPlannerOpen)
+    {
+        CloseConflictPlanner();
+        ClientMessage(TEXT("Đã hủy chọn cách ứng đối."));
+        return;
+    }
     const bool bWillPause = !IsPaused();
     if (!SetPause(bWillPause))
     {

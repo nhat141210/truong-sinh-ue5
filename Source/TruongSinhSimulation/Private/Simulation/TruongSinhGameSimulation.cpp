@@ -85,11 +85,46 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
                 (ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps != 0)) ||
             ActivityPayload->ConflictPermanentDamageDays < 0 ||
             (!ActivityPayload->ConflictOpponentId.IsValid() &&
-                (ActivityPayload->ConflictPermanentDamageDays != 0 || ActivityPayload->bConflictOpponentDefeated)))))
+                (ActivityPayload->ConflictPermanentDamageDays != 0 || ActivityPayload->bConflictOpponentDefeated ||
+                    ActivityPayload->ConflictApproachId.IsValid() || ActivityPayload->bConflictAvoided)) ||
+            (ActivityPayload->ConflictApproachId.IsValid() && !ActivityPayload->ConflictOpponentId.IsValid()) ||
+            (ActivityPayload->ConsumedOwnedAssetId.IsValid() &&
+                !(ActivityPayload->ConsumedOwnedAssetId == ActivityPayload->RequiredOwnedAssetId)) ||
+            (ActivityPayload->AssistingSectId.IsValid() &&
+                !(ActivityPayload->AssistingSectId == ActivityPayload->RequiredSectId)) ||
+            (ActivityPayload->bConflictAvoided &&
+                (ActivityPayload->bConflictOpponentDefeated || ActivityPayload->ConflictPermanentDamageDays != 0)))))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
+    if (ActivityPayload && ActivityPayload->ConflictOpponentId.IsValid())
+    {
+        const FString& Approach = ActivityPayload->ConflictApproachId.Value;
+        const bool bKnownApproach = Approach == TEXT("conflict.approach.fight") ||
+            Approach == TEXT("conflict.approach.negotiate") || Approach == TEXT("conflict.approach.pay") ||
+            Approach == TEXT("conflict.approach.flee") || Approach == TEXT("conflict.approach.sect_assist");
+        const bool bRouteFieldsMatch =
+            ((Approach == TEXT("conflict.approach.negotiate")) == ActivityPayload->RequiredRelationshipId.IsValid()) &&
+            ((Approach == TEXT("conflict.approach.pay")) == ActivityPayload->RequiredOwnedAssetId.IsValid()) &&
+            ((Approach == TEXT("conflict.approach.pay")) == ActivityPayload->ConsumedOwnedAssetId.IsValid()) &&
+            ((Approach == TEXT("conflict.approach.sect_assist")) == ActivityPayload->RequiredSectId.IsValid()) &&
+            ((Approach == TEXT("conflict.approach.sect_assist")) == ActivityPayload->AssistingSectId.IsValid());
+        if (!bKnownApproach || !bRouteFieldsMatch)
+        {
+            return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
+        }
+    }
     if (ActivityPayload && !(ActivityPayload->RequiredCurrentRealmId == InOutState.CurrentVessel.RealmId))
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonActivityPrecondition);
+    }
+    if (ActivityPayload &&
+        ((ActivityPayload->RequiredRelationshipId.IsValid() &&
+            !InOutState.CurrentVessel.RelationshipIds.Contains(ActivityPayload->RequiredRelationshipId)) ||
+         (ActivityPayload->RequiredOwnedAssetId.IsValid() &&
+            !InOutState.CurrentVessel.OwnedAssetIds.Contains(ActivityPayload->RequiredOwnedAssetId)) ||
+         (ActivityPayload->RequiredSectId.IsValid() &&
+            !(InOutState.CurrentVessel.SectId == ActivityPayload->RequiredSectId))))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonActivityPrecondition);
     }
@@ -145,6 +180,10 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     {
         InOutState.CurrentVessel.Lifespan.RealmBonusDays += RealmLifespanDelta;
         InOutState.CurrentVessel.Lifespan.PermanentDamageDays += ActivityPayload->ConflictPermanentDamageDays;
+        if (ActivityPayload->ConsumedOwnedAssetId.IsValid())
+        {
+            InOutState.CurrentVessel.OwnedAssetIds.RemoveSingle(ActivityPayload->ConsumedOwnedAssetId);
+        }
         if (ActivityPayload->NewRealmId.IsValid())
         {
             InOutState.CurrentVessel.RealmId = ActivityPayload->NewRealmId;
@@ -179,6 +218,10 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
             Record.OutcomeId = ActivityPayload->OutcomeId;
             Record.PermanentDamageDays = ActivityPayload->ConflictPermanentDamageDays;
             Record.bOpponentDefeated = ActivityPayload->bConflictOpponentDefeated;
+            Record.ApproachId = ActivityPayload->ConflictApproachId;
+            Record.ConsumedAssetId = ActivityPayload->ConsumedOwnedAssetId;
+            Record.AssistingSectId = ActivityPayload->AssistingSectId;
+            Record.bConflictAvoided = ActivityPayload->bConflictAvoided;
             InOutState.ConflictRecords.Add(MoveTemp(Record));
         }
     }
@@ -256,10 +299,12 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     ConflictStates.Reserve(State.ConflictRecords.Num());
     for (const FTruongSinhConflictRecord& Conflict : State.ConflictRecords)
     {
-        ConflictStates.Add(FString::Printf(TEXT("%s:%s:%s:%s:%lld:%d"),
+        ConflictStates.Add(FString::Printf(TEXT("%s:%s:%s:%s:%lld:%d:%s:%s:%s:%d"),
             *Conflict.CommandId.ToString(EGuidFormats::Digits), *Conflict.EncounterId.Value,
             *Conflict.OpponentId.Value, *Conflict.OutcomeId.Value,
-            static_cast<long long>(Conflict.PermanentDamageDays), Conflict.bOpponentDefeated ? 1 : 0));
+            static_cast<long long>(Conflict.PermanentDamageDays), Conflict.bOpponentDefeated ? 1 : 0,
+            *Conflict.ApproachId.Value, *Conflict.ConsumedAssetId.Value, *Conflict.AssistingSectId.Value,
+            Conflict.bConflictAvoided ? 1 : 0));
     }
     ConflictStates.Sort();
 

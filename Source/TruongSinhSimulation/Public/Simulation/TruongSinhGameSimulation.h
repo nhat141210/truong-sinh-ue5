@@ -105,6 +105,27 @@ struct TRUONGSINHSIMULATION_API FTruongSinhResolvedActivityCommitPayload : publi
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     bool bConflictOpponentDefeated = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ConflictApproachId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId RequiredRelationshipId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId RequiredOwnedAssetId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId RequiredSectId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ConsumedOwnedAssetId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId AssistingSectId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    bool bConflictAvoided = false;
 };
 
 /** Persistent result of a committed recipe/activity output. Ordered by command GUID for save/hash determinism. */
@@ -177,6 +198,18 @@ struct TRUONGSINHSIMULATION_API FTruongSinhConflictRecord
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     bool bOpponentDefeated = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ApproachId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ConsumedAssetId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId AssistingSectId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    bool bConflictAvoided = false;
 };
 
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */

@@ -265,6 +265,74 @@ TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
     ResultSlot->SetPadding(FMargin(0.0f, 0.0f, 34.0f, 10.0f));
     ResultFrameRoot->SetVisibility(ESlateVisibility::Collapsed);
 
+    // Conflict planner. The controller supplies the eligibility copy from canonical state;
+    // this card only presents the five shared-pipeline approaches and their keyboard bindings.
+    ConflictPlannerRoot = WidgetTree->ConstructWidget<UOverlay>(
+        UOverlay::StaticClass(), TEXT("ConflictPlannerRoot"));
+    UBorder* PlannerCard = TruongSinhHUD::Panel(WidgetTree, TEXT("ConflictPlannerCard"),
+        FLinearColor(TruongSinhHUD::DeepJade.R, TruongSinhHUD::DeepJade.G,
+            TruongSinhHUD::DeepJade.B, 0.98f),
+        FMargin(58.0f, 45.0f, 58.0f, 42.0f));
+    UVerticalBox* PlannerStack = WidgetTree->ConstructWidget<UVerticalBox>(
+        UVerticalBox::StaticClass(), TEXT("ConflictPlannerStack"));
+    PlannerCard->SetContent(PlannerStack);
+
+    UTextBlock* PlannerEyebrow = TruongSinhHUD::Text(WidgetTree, TEXT("ConflictPlannerEyebrow"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictPlannerEyebrow", "TRƯỚC KHI XUNG ĐỘT"),
+        11, TruongSinhHUD::Gold, true);
+    PlannerEyebrow->SetJustification(ETextJustify::Center);
+    TruongSinhHUD::AddVertical(PlannerStack, PlannerEyebrow);
+    UTextBlock* PlannerTitle = TruongSinhHUD::Text(WidgetTree, TEXT("ConflictPlannerTitle"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictPlannerTitle", "Chọn cách ứng đối"),
+        26, TruongSinhHUD::Ivory, true);
+    PlannerTitle->SetJustification(ETextJustify::Center);
+    TruongSinhHUD::AddVertical(PlannerStack, PlannerTitle, FMargin(0.0f, 7.0f, 0.0f, 12.0f));
+
+    UBorder* PlannerRule = TruongSinhHUD::Panel(WidgetTree, TEXT("ConflictPlannerRule"),
+        TruongSinhHUD::Gold, FMargin(0.0f));
+    USizeBox* PlannerRuleSize = WidgetTree->ConstructWidget<USizeBox>(
+        USizeBox::StaticClass(), TEXT("ConflictPlannerRuleSize"));
+    PlannerRuleSize->SetHeightOverride(1.0f);
+    PlannerRuleSize->SetContent(PlannerRule);
+    TruongSinhHUD::AddVertical(PlannerStack, PlannerRuleSize, FMargin(0.0f, 0.0f, 0.0f, 12.0f));
+
+    ConflictOptionTexts.Reset();
+    for (int32 Index = 0; Index < 5; ++Index)
+    {
+        UTextBlock* OptionText = TruongSinhHUD::Text(
+            WidgetTree,
+            *FString::Printf(TEXT("ConflictOption%d"), Index + 1),
+            FText::GetEmpty(),
+            13,
+            TruongSinhHUD::PaleJade);
+        OptionText->SetAutoWrapText(true);
+        TruongSinhHUD::AddVertical(PlannerStack, OptionText,
+            FMargin(8.0f, Index == 0 ? 0.0f : 5.0f, 8.0f, 0.0f));
+        ConflictOptionTexts.Add(OptionText);
+    }
+
+    UTextBlock* PlannerHint = TruongSinhHUD::Text(WidgetTree, TEXT("ConflictPlannerHint"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictPlannerHint", "Nhấn 1–5 để chọn  ·  ESC để quay lại"),
+        10, TruongSinhHUD::Muted);
+    PlannerHint->SetJustification(ETextJustify::Center);
+    TruongSinhHUD::AddVertical(PlannerStack, PlannerHint, FMargin(0.0f, 15.0f, 0.0f, 0.0f));
+
+    TruongSinhHUD::FillOverlay(ConflictPlannerRoot, PlannerCard);
+    if (UImage* PlannerFrame = TruongSinhHUD::Frame(
+        WidgetTree, TEXT("ConflictPlannerOrnateFrame"), OrnateFrameTexture, FVector2D(680.0f, 490.0f)))
+    {
+        TruongSinhHUD::FillOverlay(ConflictPlannerRoot, PlannerFrame);
+    }
+    USizeBox* PlannerSize = WidgetTree->ConstructWidget<USizeBox>(
+        USizeBox::StaticClass(), TEXT("ConflictPlannerSize"));
+    PlannerSize->SetWidthOverride(680.0f);
+    PlannerSize->SetHeightOverride(490.0f);
+    PlannerSize->SetContent(ConflictPlannerRoot);
+    UOverlaySlot* PlannerSlot = Root->AddChildToOverlay(PlannerSize);
+    PlannerSlot->SetHorizontalAlignment(HAlign_Center);
+    PlannerSlot->SetVerticalAlignment(VAlign_Center);
+    ConflictPlannerRoot->SetVisibility(ESlateVisibility::Collapsed);
+
     // Full-screen pause treatment. Input ownership remains in the player controller.
     PauseOverlay = TruongSinhHUD::Panel(WidgetTree, TEXT("PauseOverlay"), FLinearColor(0.004f, 0.008f, 0.009f, 0.82f),
         FMargin(0.0f));
@@ -357,6 +425,43 @@ void UTruongSinhRuntimeHUDWidget::SetPaused(const bool bPaused)
     if (PauseOverlay)
     {
         PauseOverlay->SetVisibility(bPaused ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+    }
+}
+
+void UTruongSinhRuntimeHUDWidget::ShowConflictPlanner(const TArray<FText>& EligibilityLines)
+{
+    const FText OptionNames[] =
+    {
+        NSLOCTEXT("TruongSinhHUD", "ConflictFight", "ĐẤU PHÁP"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictNegotiate", "ĐÀM PHÁN"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictPay", "BỒI THƯỜNG"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictFlee", "BỎ CHẠY"),
+        NSLOCTEXT("TruongSinhHUD", "ConflictSectAssist", "NHỜ TÔNG MÔN")
+    };
+    const FText MissingEligibility = NSLOCTEXT(
+        "TruongSinhHUD", "ConflictEligibilityUnknown", "Không xác định điều kiện");
+    for (int32 Index = 0; Index < ConflictOptionTexts.Num() && Index < UE_ARRAY_COUNT(OptionNames); ++Index)
+    {
+        if (ConflictOptionTexts[Index])
+        {
+            const FText Eligibility = EligibilityLines.IsValidIndex(Index) ?
+                EligibilityLines[Index] : MissingEligibility;
+            ConflictOptionTexts[Index]->SetText(FText::Format(
+                NSLOCTEXT("TruongSinhHUD", "ConflictOptionFormat", "{0}   {1}\n      {2}"),
+                FText::AsNumber(Index + 1), OptionNames[Index], Eligibility));
+        }
+    }
+    if (ConflictPlannerRoot)
+    {
+        ConflictPlannerRoot->SetVisibility(ESlateVisibility::HitTestInvisible);
+    }
+}
+
+void UTruongSinhRuntimeHUDWidget::HideConflictPlanner()
+{
+    if (ConflictPlannerRoot)
+    {
+        ConflictPlannerRoot->SetVisibility(ESlateVisibility::Collapsed);
     }
 }
 

@@ -20,6 +20,7 @@ public:
     virtual void PlayerTick(float DeltaTime) override;
 
     void TryInteract();
+    void SelectConflictApproach(int32 OptionIndex);
     void TogglePauseMenu();
 
 private:
@@ -30,8 +31,12 @@ private:
     TObjectPtr<UTruongSinhActivityRegistryDataAsset> ActivityRegistry;
 
     FString PendingReplayId;
+    bool bConflictPlannerOpen = false;
+    int32 SelectedConflictApproachIndex = INDEX_NONE;
+    TArray<bool> ConflictApproachEligibility;
 
     void ApplyGameplayMouseCapture();
+    void CloseConflictPlanner();
     bool FindBestInteraction(AActor*& OutProvider, FTruongSinhInteractionOffer& OutOffer) const;
     bool SaveCanonicalState(FString& OutError) const;
     bool RestoreCanonicalState(FString& OutError);

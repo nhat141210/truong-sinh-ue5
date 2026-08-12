@@ -43,6 +43,10 @@ if formation.get_editor_property("formation_duration_minutes") != 10080:
 conflict = by_facility["facility.conflict.cloud_palm_trial"]
 if conflict.get_editor_property("conflict_opponent_id").get_editor_property("value") != "npc.rival.cloud_palm_disciple":
     raise RuntimeError("Conflict opponent ID is missing")
+routes = conflict.get_editor_property("conflict_avoidance_routes")
+route_ids = {route.get_editor_property("route_id").get_editor_property("value") for route in routes}
+if route_ids != {"conflict.route.negotiate", "conflict.route.pay", "conflict.route.flee", "conflict.route.sect_assist"}:
+    raise RuntimeError(f"Conflict avoidance routes are wrong: {route_ids}")
 
 activity_ids = set()
 for entry in definitions:

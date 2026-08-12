@@ -77,6 +77,21 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UInputAction> PauseAction;
 
+    UPROPERTY(Transient)
+    TObjectPtr<UInputAction> ConflictApproach1Action;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputAction> ConflictApproach2Action;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputAction> ConflictApproach3Action;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputAction> ConflictApproach4Action;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UInputAction> ConflictApproach5Action;
+
     void MoveForward(const FInputActionValue& Value);
     void MoveBackward(const FInputActionValue& Value);
     void MoveLeft(const FInputActionValue& Value);
@@ -85,4 +100,9 @@ private:
     void LookPitch(const FInputActionValue& Value);
     void Interact();
     void TogglePause();
+    void SelectConflictApproach1();
+    void SelectConflictApproach2();
+    void SelectConflictApproach3();
+    void SelectConflictApproach4();
+    void SelectConflictApproach5();
 };

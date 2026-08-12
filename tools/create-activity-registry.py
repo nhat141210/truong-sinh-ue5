@@ -17,6 +17,19 @@ def stable_id(value):
     return result
 
 
+def conflict_route(route_id, duration, difficulty, relationship_id="", asset_id="", requires_sect=False):
+    result = unreal.TruongSinhConflictRouteDefinition()
+    result.set_editor_property("route_id", stable_id(route_id))
+    result.set_editor_property("duration_minutes", duration)
+    result.set_editor_property("difficulty_or_target_power", difficulty)
+    if relationship_id:
+        result.set_editor_property("required_relationship_id", stable_id(relationship_id))
+    if asset_id:
+        result.set_editor_property("required_owned_asset_id", stable_id(asset_id))
+    result.set_editor_property("requires_sect_membership", requires_sect)
+    return result
+
+
 def definition(activity_id, facility_id, resolver_id, duration, minimum, difficulty,
                technique, preparation, environment, output_id="", maximum_output=0,
                formation_effect_id="", formation_duration=0, conflict_opponent_id=""):
@@ -40,6 +53,14 @@ def definition(activity_id, facility_id, resolver_id, duration, minimum, difficu
         result.set_editor_property("formation_duration_minutes", formation_duration)
     if conflict_opponent_id:
         result.set_editor_property("conflict_opponent_id", stable_id(conflict_opponent_id))
+        result.set_editor_property("conflict_avoidance_routes", [
+            conflict_route("conflict.route.negotiate", 20, 6000,
+                           relationship_id="relationship.cloud_palm_disciple.acquainted"),
+            conflict_route("conflict.route.pay", 10, 0,
+                           asset_id="asset.compensation.cloud_palm_pouch"),
+            conflict_route("conflict.route.flee", 15, 5200),
+            conflict_route("conflict.route.sect_assist", 30, 0, requires_sect=True),
+        ])
     return result
 
 

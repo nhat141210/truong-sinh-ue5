@@ -5,6 +5,30 @@
 #include "Engine/DataAsset.h"
 #include "TruongSinhActivityRegistryDataAsset.generated.h"
 
+USTRUCT(BlueprintType)
+struct TRUONGSINHDATA_API FTruongSinhConflictRouteDefinition
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict")
+    FTruongSinhStableId RouteId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict", meta = (ClampMin = "1"))
+    int64 DurationMinutes = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict", meta = (ClampMin = "0"))
+    int64 DifficultyOrTargetPower = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict")
+    FTruongSinhStableId RequiredRelationshipId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict")
+    FTruongSinhStableId RequiredOwnedAssetId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Conflict")
+    bool bRequiresSectMembership = false;
+};
+
 /** Authored, non-mutable description consumed by the shared activity pipeline. */
 USTRUCT(BlueprintType)
 struct TRUONGSINHDATA_API FTruongSinhActivityDefinition
@@ -63,6 +87,9 @@ struct TRUONGSINHDATA_API FTruongSinhActivityDefinition
     /** Canonical opponent selected by an authored conflict encounter. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId ConflictOpponentId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    TArray<FTruongSinhConflictRouteDefinition> ConflictAvoidanceRoutes;
 };
 
 /**

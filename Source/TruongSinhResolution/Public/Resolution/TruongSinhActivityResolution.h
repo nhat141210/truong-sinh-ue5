@@ -28,6 +28,16 @@ enum class ETruongSinhActivityStrategy : uint8
 };
 
 UENUM(BlueprintType)
+enum class ETruongSinhConflictApproach : uint8
+{
+    Fight,
+    Negotiate,
+    Pay,
+    Flee,
+    SectAssist
+};
+
+UENUM(BlueprintType)
 enum class ETruongSinhResolutionOutcome : uint8
 {
     Rejected,
@@ -97,6 +107,18 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhActivityPlan
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId ConflictOpponentId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    ETruongSinhConflictApproach ConflictApproach = ETruongSinhConflictApproach::Fight;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId RequiredRelationshipId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId RequiredOwnedAssetId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId RequiredSectId;
 };
 
 /** Immutable canonical values supplied by simulation. Every score uses the same fixed-point units. */
@@ -122,6 +144,15 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhActivitySnapshot
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     int64 MasterSeed = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    bool bHasOpponentRelationship = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    bool bHasRequiredOwnedAsset = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    bool bHasSectSupport = false;
 };
 
 USTRUCT(BlueprintType)
@@ -235,6 +266,18 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     bool bConflictOpponentDefeated = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ConflictApproachId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    bool bConflictAvoided = false;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ConsumedOwnedAssetId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId AssistingSectId;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId OutcomeId;

@@ -37,6 +37,18 @@ const TCHAR* ActivityPrefix(const ETruongSinhActivityType Type)
         return TEXT("cultivation");
     }
 }
+
+const TCHAR* ConflictApproachId(const ETruongSinhConflictApproach Approach)
+{
+    switch (Approach)
+    {
+    case ETruongSinhConflictApproach::Negotiate: return TEXT("conflict.approach.negotiate");
+    case ETruongSinhConflictApproach::Pay: return TEXT("conflict.approach.pay");
+    case ETruongSinhConflictApproach::Flee: return TEXT("conflict.approach.flee");
+    case ETruongSinhConflictApproach::SectAssist: return TEXT("conflict.approach.sect_assist");
+    default: return TEXT("conflict.approach.fight");
+    }
+}
 }
 
 namespace
@@ -84,7 +96,14 @@ bool IsPlanValid(const FTruongSinhActivityPlan& Plan)
     {
         return false;
     }
-    if ((Plan.Type == ETruongSinhActivityType::Conflict) != Plan.ConflictOpponentId.IsValid())
+    if ((Plan.Type == ETruongSinhActivityType::Conflict) != Plan.ConflictOpponentId.IsValid() ||
+        (Plan.Type != ETruongSinhActivityType::Conflict &&
+            (Plan.ConflictApproach != ETruongSinhConflictApproach::Fight || Plan.RequiredRelationshipId.IsValid() ||
+                Plan.RequiredOwnedAssetId.IsValid() || Plan.RequiredSectId.IsValid())) ||
+        (Plan.Type == ETruongSinhActivityType::Conflict &&
+            ((Plan.ConflictApproach == ETruongSinhConflictApproach::Negotiate) != Plan.RequiredRelationshipId.IsValid() ||
+                (Plan.ConflictApproach == ETruongSinhConflictApproach::Pay) != Plan.RequiredOwnedAssetId.IsValid() ||
+                (Plan.ConflictApproach == ETruongSinhConflictApproach::SectAssist) != Plan.RequiredSectId.IsValid())))
     {
         return false;
     }
@@ -142,6 +161,23 @@ FTruongSinhActivityPreview FTruongSinhAutoResolver::Preview(
     Preview.DurationMinutes = Plan.DurationMinutes;
     Preview.bEligible = IsPlanValid(Plan) && Snapshot.PerformerPower >= 0 &&
         Snapshot.DifficultyOrTargetPower >= 0;
+    if (Preview.bEligible && Plan.Type == ETruongSinhActivityType::Conflict)
+    {
+        switch (Plan.ConflictApproach)
+        {
+        case ETruongSinhConflictApproach::Negotiate:
+            Preview.bEligible = Snapshot.bHasOpponentRelationship || Snapshot.TechniqueModifierUnits >= 500;
+            break;
+        case ETruongSinhConflictApproach::Pay:
+            Preview.bEligible = Snapshot.bHasRequiredOwnedAsset;
+            break;
+        case ETruongSinhConflictApproach::SectAssist:
+            Preview.bEligible = Snapshot.bHasSectSupport;
+            break;
+        default:
+            break;
+        }
+    }
     Preview.ReasonId = MakeId(Preview.bEligible
         ? TruongSinhResolutionIds::Eligible
         : TruongSinhResolutionIds::InvalidPlan);
@@ -258,6 +294,27 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
         break;
     case ETruongSinhActivityType::Conflict:
         Result.ConflictOpponentId = Plan.ConflictOpponentId;
+        Result.ConflictApproachId = MakeId(TruongSinhResolutionIds::ConflictApproachId(Plan.ConflictApproach));
+        if (Plan.ConflictApproach == ETruongSinhConflictApproach::Negotiate ||
+            Plan.ConflictApproach == ETruongSinhConflictApproach::Pay ||
+            Plan.ConflictApproach == ETruongSinhConflictApproach::SectAssist)
+        {
+            Result.Outcome = ETruongSinhResolutionOutcome::Success;
+            Result.bConflictAvoided = true;
+            Result.ConsumedOwnedAssetId = Plan.ConflictApproach == ETruongSinhConflictApproach::Pay ?
+                Plan.RequiredOwnedAssetId : FTruongSinhStableId();
+            Result.AssistingSectId = Plan.ConflictApproach == ETruongSinhConflictApproach::SectAssist ?
+                Plan.RequiredSectId : FTruongSinhStableId();
+            break;
+        }
+        if (Plan.ConflictApproach == ETruongSinhConflictApproach::Flee)
+        {
+            Result.bConflictAvoided = Gap >= -1000;
+            Result.Outcome = Result.bConflictAvoided ? ETruongSinhResolutionOutcome::Success :
+                ETruongSinhResolutionOutcome::Failure;
+            Result.ConflictPermanentDamageDays = Result.bConflictAvoided ? 0 : 7;
+            break;
+        }
         switch (Result.Outcome)
         {
         case ETruongSinhResolutionOutcome::GreatSuccess:
