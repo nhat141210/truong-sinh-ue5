@@ -12,7 +12,7 @@ Trạng thái: `NOT_STARTED`, `SOURCE_ONLY`, `WINDOWS_VERIFIED`, `SLICE_PASS`, `
 | SOUL-001 | Soul/vessel separation | Công pháp/ký ức thuộc soul; body giữ căn cơ/tu vi | SOURCE_ONLY |
 | SOUL-002 | Đoạt xá | Nhận identity/assets/relations mục tiêu; reset body cultivation | SOURCE_ONLY |
 | SOUL-003 | Wandering Soul | Thất bại không kết thúc save | SOURCE_ONLY |
-| ACT-001 | Shared activity pipeline | Cultivation và đột phá cùng Plan→Resolve→Commit→Present, không widget/subsystem riêng | WINDOWS_VERIFIED |
+| ACT-001 | Shared activity pipeline | Registry Data Asset chọn cultivation/đột phá cùng Plan→Resolve→Commit→Present, không widget/subsystem riêng | WINDOWS_VERIFIED |
 | ACT-002 | Replay safety | 1x/2x/skip/missing cue cùng result; load không reroll | NOT_STARTED |
 | CULT-001 | Tu luyện/đột phá | Tu vi/time/lifespan thay đổi deterministic | WINDOWS_VERIFIED |
 | ALC-001 | Luyện đan auto | Recipe/material/facility/strategy tạo output không minigame | NOT_STARTED |

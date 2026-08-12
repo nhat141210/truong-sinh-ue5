@@ -5,6 +5,7 @@
 #include "TruongSinhPlayerController.generated.h"
 
 class UTruongSinhRuntimeHUDWidget;
+class UTruongSinhActivityRegistryDataAsset;
 class AActor;
 struct FTruongSinhInteractionOffer;
 
@@ -14,6 +15,7 @@ class TRUONGSINHUE5_API ATruongSinhPlayerController : public APlayerController
     GENERATED_BODY()
 
 public:
+    ATruongSinhPlayerController(const FObjectInitializer& ObjectInitializer);
     virtual void BeginPlay() override;
     virtual void PlayerTick(float DeltaTime) override;
 
@@ -23,6 +25,9 @@ public:
 private:
     UPROPERTY(Transient)
     TObjectPtr<UTruongSinhRuntimeHUDWidget> RuntimeHUD;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UTruongSinhActivityRegistryDataAsset> ActivityRegistry;
 
     FString PendingReplayId;
 

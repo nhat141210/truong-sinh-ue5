@@ -2,6 +2,7 @@
 
 #include "Core/TruongSinhTypes.h"
 #include "Core/TruongSinhDeterministicRng.h"
+#include "Data/TruongSinhActivityRegistryDataAsset.h"
 #include "GameFramework/InputSettings.h"
 #include "Misc/AutomationTest.h"
 #include "Resolution/TruongSinhActivityResolution.h"
@@ -52,6 +53,41 @@ bool FTruongSinhStableIdSpec::RunTest(const FString& Parameters)
     FTruongSinhStableId SpacedId;
     SpacedId.Value = TEXT("technique example");
     TestFalse(TEXT("Stable identifiers cannot contain spaces"), SpacedId.IsValid());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhActivityRegistrySpec,
+    "TruongSinh.Data.ActivityRegistry",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhActivityRegistrySpec::RunTest(const FString& Parameters)
+{
+    UTruongSinhActivityRegistryDataAsset* Registry = NewObject<UTruongSinhActivityRegistryDataAsset>();
+    FTruongSinhActivityDefinition Cultivation;
+    Cultivation.ActivityId.Value = TEXT("activity.cultivation.test");
+    Cultivation.FacilityId.Value = TEXT("facility.cultivation.test");
+    Cultivation.MethodId.Value = TEXT("method.test");
+    Cultivation.LocationId.Value = TEXT("location.test");
+    Cultivation.ResolverId = TEXT("cultivation");
+    Cultivation.DurationMinutes = 480;
+    Cultivation.DifficultyOrTargetPower = 6500;
+    Registry->Definitions.Add(Cultivation);
+
+    FString Error;
+    TestTrue(TEXT("A complete activity definition validates"), Registry->ValidateRegistry(Error));
+    const FTruongSinhActivityDefinition* Found = Registry->FindByFacility(Cultivation.FacilityId);
+    TestNotNull(TEXT("Facility lookup returns the authored definition"), Found);
+    if (Found)
+    {
+        TestEqual(TEXT("Lookup preserves resolver registration"), Found->ResolverId, FName(TEXT("cultivation")));
+        TestEqual(TEXT("Lookup preserves exact duration"), Found->DurationMinutes, 480ll);
+    }
+
+    FTruongSinhActivityDefinition Duplicate = Cultivation;
+    Duplicate.ActivityId.Value = TEXT("activity.cultivation.duplicate");
+    Registry->Definitions.Add(Duplicate);
+    TestFalse(TEXT("Duplicate facility IDs are rejected before runtime"), Registry->ValidateRegistry(Error));
     return true;
 }
 

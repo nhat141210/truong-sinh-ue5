@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Core/TruongSinhTypes.h"
+#include "Data/TruongSinhActivityRegistryDataAsset.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
@@ -17,6 +18,7 @@
 #include "TruongSinhInteractionProvider.h"
 #include "TruongSinhUE5.h"
 #include "UI/TruongSinhRuntimeHUDWidget.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace
 {
@@ -25,9 +27,24 @@ FString SavePath()
     return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("SaveGames"), TEXT("TruongSinh_Autosave_v2.json"));
 }
 
-bool IsBreakthroughOffer(const FTruongSinhInteractionOffer& Offer)
+bool IsBreakthroughDefinition(const FTruongSinhActivityDefinition& Definition)
 {
-    return Offer.CandidateId.Value == TEXT("facility.breakthrough.foundation");
+    return Definition.ResolverId == TEXT("breakthrough");
+}
+
+bool TryGetActivityType(const FTruongSinhActivityDefinition& Definition, ETruongSinhActivityType& OutType)
+{
+    if (Definition.ResolverId == TEXT("cultivation"))
+    {
+        OutType = ETruongSinhActivityType::Cultivation;
+        return true;
+    }
+    if (Definition.ResolverId == TEXT("breakthrough"))
+    {
+        OutType = ETruongSinhActivityType::Breakthrough;
+        return true;
+    }
+    return false;
 }
 
 FText OutcomeText(const ETruongSinhResolutionOutcome Outcome)
@@ -46,12 +63,39 @@ FText OutcomeText(const ETruongSinhResolutionOutcome Outcome)
         return NSLOCTEXT("TruongSinh", "Rejected", "KHÔNG THỂ THỰC HIỆN");
     }
 }
+
+}
+
+ATruongSinhPlayerController::ATruongSinhPlayerController(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+{
+    static ConstructorHelpers::FObjectFinder<UTruongSinhActivityRegistryDataAsset> RegistryAsset(
+        TEXT("/Game/Data/DA_ActivityRegistry.DA_ActivityRegistry"));
+    ActivityRegistry = RegistryAsset.Object;
 }
 
 void ATruongSinhPlayerController::BeginPlay()
 {
     Super::BeginPlay();
     ApplyGameplayMouseCapture();
+
+    if (!ActivityRegistry)
+    {
+        UE_LOG(LogTruongSinh, Error, TEXT("Shared activity registry is unavailable; interactions are disabled."));
+    }
+    else
+    {
+        FString RegistryError;
+        if (!ActivityRegistry->ValidateRegistry(RegistryError))
+        {
+            UE_LOG(LogTruongSinh, Error, TEXT("Shared activity registry is invalid: %s"), *RegistryError);
+        }
+        else
+        {
+            UE_LOG(LogTruongSinh, Log, TEXT("Shared activity registry loaded: %d definitions."),
+                ActivityRegistry->Definitions.Num());
+        }
+    }
 
     RuntimeHUD = CreateWidget<UTruongSinhRuntimeHUDWidget>(this, UTruongSinhRuntimeHUDWidget::StaticClass());
     if (RuntimeHUD)
@@ -103,11 +147,14 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
     AActor* Provider = nullptr;
     FTruongSinhInteractionOffer Offer;
     const bool bHasOffer = FindBestInteraction(Provider, Offer);
+    const FTruongSinhActivityDefinition* Definition = bHasOffer && ActivityRegistry ?
+        ActivityRegistry->FindByFacility(Offer.CandidateId) : nullptr;
+    const bool bHasRegisteredOffer = Definition != nullptr;
     RuntimeHUD->SetInteractionPrompt(
-        bHasOffer ? (IsBreakthroughOffer(Offer)
+        bHasRegisteredOffer ? (IsBreakthroughDefinition(*Definition)
             ? NSLOCTEXT("TruongSinh", "BreakthroughPrompt", "Đột phá Trúc Cơ")
             : NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ")) : FText::GetEmpty(),
-        bHasOffer);
+        bHasRegisteredOffer);
 }
 
 void ATruongSinhPlayerController::ApplyGameplayMouseCapture()
@@ -147,7 +194,31 @@ void ATruongSinhPlayerController::TryInteract()
     }
 
     const FTruongSinhSimulationState Before = Simulation->GetState();
-    const bool bBreakthrough = IsBreakthroughOffer(Offer);
+    if (!ActivityRegistry)
+    {
+        ClientMessage(TEXT("Activity registry chưa được nạp."));
+        return;
+    }
+    FString RegistryError;
+    if (!ActivityRegistry->ValidateRegistry(RegistryError))
+    {
+        UE_LOG(LogTruongSinh, Error, TEXT("Invalid activity registry: %s"), *RegistryError);
+        ClientMessage(TEXT("Activity registry không hợp lệ."));
+        return;
+    }
+    const FTruongSinhActivityDefinition* Definition = ActivityRegistry->FindByFacility(Offer.CandidateId);
+    if (!Definition)
+    {
+        ClientMessage(TEXT("Điểm tương tác chưa có activity definition."));
+        return;
+    }
+    ETruongSinhActivityType ActivityType;
+    if (!TryGetActivityType(*Definition, ActivityType))
+    {
+        ClientMessage(TEXT("Resolver activity chưa được đăng ký."));
+        return;
+    }
+    const bool bBreakthrough = IsBreakthroughDefinition(*Definition);
     if (bBreakthrough && Before.CurrentVessel.RealmId.Value != TEXT("realm.mortal"))
     {
         const FText Requirement = NSLOCTEXT(
@@ -177,21 +248,20 @@ void ATruongSinhPlayerController::TryInteract()
     Plan.Action = ITruongSinhInteractionProvider::Execute_BuildInteractionCommand(
         Provider, Offer.CandidateId, Before.CurrentVessel.VesselId,
         Before.WorldRevision, Before.CommittedCommandIds.Num());
-    Plan.Type = bBreakthrough ? ETruongSinhActivityType::Breakthrough : ETruongSinhActivityType::Cultivation;
-    Plan.ActivityId.Value = bBreakthrough ? TEXT("activity.breakthrough.foundation") :
-        TEXT("activity.cultivation.breathing_cycle");
-    Plan.MethodId.Value = TEXT("method.five_elements_breathing");
-    Plan.FacilityId = Offer.CandidateId;
-    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
-    Plan.DurationMinutes = bBreakthrough ? 720 : 480;
+    Plan.Type = ActivityType;
+    Plan.ActivityId = Definition->ActivityId;
+    Plan.MethodId = Definition->MethodId;
+    Plan.FacilityId = Definition->FacilityId;
+    Plan.LocationId = Definition->LocationId;
+    Plan.DurationMinutes = Definition->DurationMinutes;
     Plan.Strategy = ETruongSinhActivityStrategy::Balanced;
 
     FTruongSinhActivitySnapshot Snapshot;
     Snapshot.PerformerPower = FMath::Min<int64>(MAX_int64 - 6000, Before.CurrentVessel.CultivationUnits) + 6000;
-    Snapshot.DifficultyOrTargetPower = 6500;
-    Snapshot.TechniqueModifierUnits = 350 + Before.Soul.KnownTechniqueIds.Num() * 150;
-    Snapshot.PreparationModifierUnits = 300;
-    Snapshot.EnvironmentModifierUnits = 450;
+    Snapshot.DifficultyOrTargetPower = Definition->DifficultyOrTargetPower;
+    Snapshot.TechniqueModifierUnits = Definition->TechniqueModifierUnits + Before.Soul.KnownTechniqueIds.Num() * 150;
+    Snapshot.PreparationModifierUnits = Definition->PreparationModifierUnits;
+    Snapshot.EnvironmentModifierUnits = Definition->EnvironmentModifierUnits;
     Snapshot.MasterSeed = Before.Rng.MasterSeed;
 
     const FTruongSinhActivityPreview Preview = FTruongSinhAutoResolver::Preview(Snapshot, Plan);

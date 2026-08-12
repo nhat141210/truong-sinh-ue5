@@ -11,6 +11,7 @@ public class TruongSinhTests : ModuleRules
             "CoreUObject",
             "Engine",
             "TruongSinhCore",
+            "TruongSinhData",
             "TruongSinhSimulation",
             "TruongSinhResolution",
             "TruongSinhSave",
