@@ -5,7 +5,9 @@
 #include "TruongSinhRuntimeHUDWidget.generated.h"
 
 class UBorder;
+class UOverlay;
 class UTextBlock;
+class UTexture2D;
 
 /**
  * Native HUD for the M2A playable loop.
@@ -19,6 +21,8 @@ class TRUONGSINHUE5_API UTruongSinhRuntimeHUDWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
+    UTruongSinhRuntimeHUDWidget(const FObjectInitializer& ObjectInitializer);
+
     UFUNCTION(BlueprintCallable, Category = "Truong Sinh|UI")
     void SetInteractionPrompt(const FText& Prompt, bool bVisible = true);
 
@@ -59,6 +63,9 @@ private:
     TObjectPtr<UBorder> ResultPanel;
 
     UPROPERTY(Transient)
+    TObjectPtr<UOverlay> ResultFrameRoot;
+
+    UPROPERTY(Transient)
     TObjectPtr<UTextBlock> ResultTitleText;
 
     UPROPERTY(Transient)
@@ -69,4 +76,7 @@ private:
 
     UPROPERTY(Transient)
     TObjectPtr<UBorder> PauseOverlay;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Truong Sinh|UI")
+    TObjectPtr<UTexture2D> OrnateFrameTexture;
 };

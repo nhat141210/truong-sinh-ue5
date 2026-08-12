@@ -16,3 +16,4 @@
 | DEC-028 | 2026-08-12 | LOCKED | Save schema v2 cho sandbox; no commercial v1 compatibility, dev migration còn gate riêng |
 | DEC-029 | 2026-08-12 | LOCKED | Development package phải là archive portable `.pak`/IoStore có prerequisites; source Game executable không thay thế cook/stage/package |
 | DEC-030 | 2026-08-12 | TEMPORARY | Dùng Manny và ba animation locomotion từ UE 5.8.1 Characters template làm visual foundation có provenance; phải thay bằng nhân vật tu tiên được duyệt ở character-art pass |
+| DEC-031 | 2026-08-12 | LOCKED | M2B corridor dùng Engine primitives và material project-author để chứng minh composition/cook/runtime; không mass-import generic template assets hay gọi đây là production art. Thay thế chỉ bằng asset có provenance/quyền dùng rõ ràng ở art pass. |

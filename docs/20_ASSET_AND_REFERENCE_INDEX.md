@@ -47,3 +47,14 @@ Design reference chỉ lưu URL công khai, ngày truy cập, observation và qu
 | `Content/Characters/Mannequins/Textures/Manny/T_Manny_02_MRA.uasset` | `6697972EAF2DFE201923DBA6A302F024B0EF4C4E46B4ECF578178717098E8277` |
 | `Content/Characters/Mannequins/Textures/Manny/T_Manny_02_N.uasset` | `61A9DB73F72FE2D7D8821B33A79F57F3F11DF9DA9455822392B84B199C78E8DF` |
 | `Content/Characters/Mannequins/Textures/Shared/T_UE_Logo_M.uasset` | `34E6FA3414C04A86B7A5287E5569EA9D6E53C319D6E7DBFC8B09DAB5B70611A6` |
+
+## Manifest — generated jade HUD frame
+
+- Asset ID: `GEN-UI-JADE-FRAME-001`.
+- Nguồn/tác giả: OpenAI built-in ImageGen, tạo trong Codex ngày 2026-08-12; không dùng ảnh tham chiếu ngoài.
+- Intended scope: texture presentation cho Unreal HUD của dự án; cần release/legal review theo điều khoản OpenAI hiện hành trước phát hành thương mại.
+- Source: `SourceArt/UI/Generated/T_UI_JadeFrame_Chroma.png`; chroma removal bằng skill helper thành `T_UI_JadeFrame.png` RGBA.
+- SHA-256 output alpha: `B5762C106501A2FE3ADD1C97EE0E3303D07E612C8F11AD3DFA43BE7C918570C4`.
+- Chỉnh sửa: chỉ xóa nền phẳng `#ff00ff`, soft matte và despill; không compositing hay reference-derived content.
+- Prompt chính: khung HUD orthographic bằng ngọc tối và chỉ vàng cổ, họa tiết mây/núi tiết chế, tâm rỗng, không chữ/logo/watermark, nền chroma phẳng.
+- Import script: `tools/import-ui-art.py`; trạng thái `M2B FOUNDATION`, chưa phải toàn bộ UI skin final.

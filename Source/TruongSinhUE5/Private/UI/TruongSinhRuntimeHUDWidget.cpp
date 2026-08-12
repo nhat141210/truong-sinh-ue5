@@ -4,6 +4,7 @@
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/SizeBox.h"
@@ -12,9 +13,11 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/GameInstance.h"
+#include "Engine/Texture2D.h"
 #include "Simulation/TruongSinhGameSimulation.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace TruongSinhHUD
 {
@@ -57,6 +60,33 @@ UBorder* Panel(UWidgetTree* Tree, const TCHAR* Name, const FLinearColor& Color, 
     return Border;
 }
 
+UImage* Frame(UWidgetTree* Tree, const TCHAR* Name, UTexture2D* Texture, const FVector2D& DesiredSize)
+{
+    if (!Texture)
+    {
+        return nullptr;
+    }
+
+    UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass(), FName(Name));
+    FSlateBrush Brush;
+    Brush.SetResourceObject(Texture);
+    Brush.DrawAs = ESlateBrushDrawType::Box;
+    Brush.Margin = FMargin(0.145f);
+    Brush.ImageSize = DesiredSize;
+    Image->SetBrush(Brush);
+    Image->SetVisibility(ESlateVisibility::HitTestInvisible);
+    return Image;
+}
+
+void FillOverlay(UOverlay* Parent, UWidget* Child)
+{
+    if (UOverlaySlot* Slot = Parent->AddChildToOverlay(Child))
+    {
+        Slot->SetHorizontalAlignment(HAlign_Fill);
+        Slot->SetVerticalAlignment(VAlign_Fill);
+    }
+}
+
 void AddVertical(UVerticalBox* Parent, UWidget* Child, const FMargin& Padding = FMargin(0.0f))
 {
     if (UVerticalBoxSlot* Slot = Parent->AddChildToVerticalBox(Child))
@@ -83,6 +113,14 @@ void AddHorizontal(UHorizontalBox* Parent, UWidget* Child, const FMargin& Paddin
 }
 }
 
+UTruongSinhRuntimeHUDWidget::UTruongSinhRuntimeHUDWidget(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+{
+    static ConstructorHelpers::FObjectFinder<UTexture2D> FrameTexture(
+        TEXT("/Game/UI/Generated/T_UI_JadeFrame.T_UI_JadeFrame"));
+    OrnateFrameTexture = FrameTexture.Object;
+}
+
 TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
 {
     if (!WidgetTree || WidgetTree->RootWidget)
@@ -94,8 +132,9 @@ TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
     WidgetTree->RootWidget = Root;
 
     // Top-left identity and progression panel.
-    UBorder* StatusPanel = TruongSinhHUD::Panel(WidgetTree, TEXT("StatusPanel"), TruongSinhHUD::Ink,
-        FMargin(22.0f, 17.0f, 24.0f, 19.0f));
+    UBorder* StatusPanel = TruongSinhHUD::Panel(WidgetTree, TEXT("StatusPanel"),
+        FLinearColor(TruongSinhHUD::Ink.R, TruongSinhHUD::Ink.G, TruongSinhHUD::Ink.B, 0.68f),
+        FMargin(70.0f, 47.0f, 58.0f, 43.0f));
     UVerticalBox* StatusStack = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("StatusStack"));
     StatusPanel->SetContent(StatusStack);
 
@@ -119,7 +158,22 @@ TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
     CultivationText = TruongSinhHUD::Text(WidgetTree, TEXT("CultivationText"), FText::GetEmpty(), 12, TruongSinhHUD::PaleJade);
     TruongSinhHUD::AddVertical(StatusStack, CultivationText, FMargin(0.0f, 3.0f, 0.0f, 0.0f));
 
-    UOverlaySlot* StatusSlot = Root->AddChildToOverlay(StatusPanel);
+    UOverlay* StatusFrameRoot = WidgetTree->ConstructWidget<UOverlay>(
+        UOverlay::StaticClass(), TEXT("StatusFrameRoot"));
+    TruongSinhHUD::FillOverlay(StatusFrameRoot, StatusPanel);
+    if (UImage* StatusFrame = TruongSinhHUD::Frame(
+        WidgetTree, TEXT("StatusOrnateFrame"), OrnateFrameTexture, FVector2D(360.0f, 218.0f)))
+    {
+        TruongSinhHUD::FillOverlay(StatusFrameRoot, StatusFrame);
+    }
+
+    USizeBox* StatusFrameSize = WidgetTree->ConstructWidget<USizeBox>(
+        USizeBox::StaticClass(), TEXT("StatusFrameSize"));
+    StatusFrameSize->SetWidthOverride(360.0f);
+    StatusFrameSize->SetHeightOverride(218.0f);
+    StatusFrameSize->SetContent(StatusFrameRoot);
+
+    UOverlaySlot* StatusSlot = Root->AddChildToOverlay(StatusFrameSize);
     StatusSlot->SetHorizontalAlignment(HAlign_Left);
     StatusSlot->SetVerticalAlignment(VAlign_Top);
     StatusSlot->SetPadding(FMargin(34.0f, 30.0f, 0.0f, 0.0f));
@@ -193,11 +247,23 @@ TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
         TruongSinhHUD::PaleJade);
     ResultDetailsText->SetAutoWrapText(true);
     TruongSinhHUD::AddVertical(ResultStack, ResultDetailsText, FMargin(0.0f, 7.0f, 0.0f, 0.0f));
-    UOverlaySlot* ResultSlot = Root->AddChildToOverlay(ResultPanel);
+    ResultFrameRoot = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("ResultFrameRoot"));
+    if (UImage* ResultFrame = TruongSinhHUD::Frame(
+        WidgetTree, TEXT("ResultOrnateFrame"), OrnateFrameTexture, FVector2D(430.0f, 184.0f)))
+    {
+        TruongSinhHUD::FillOverlay(ResultFrameRoot, ResultFrame);
+    }
+    TruongSinhHUD::FillOverlay(ResultFrameRoot, ResultPanel);
+    USizeBox* ResultFrameSize = WidgetTree->ConstructWidget<USizeBox>(
+        USizeBox::StaticClass(), TEXT("ResultFrameSize"));
+    ResultFrameSize->SetWidthOverride(430.0f);
+    ResultFrameSize->SetHeightOverride(184.0f);
+    ResultFrameSize->SetContent(ResultFrameRoot);
+    UOverlaySlot* ResultSlot = Root->AddChildToOverlay(ResultFrameSize);
     ResultSlot->SetHorizontalAlignment(HAlign_Right);
     ResultSlot->SetVerticalAlignment(VAlign_Center);
     ResultSlot->SetPadding(FMargin(0.0f, 0.0f, 34.0f, 10.0f));
-    ResultPanel->SetVisibility(ESlateVisibility::Collapsed);
+    ResultFrameRoot->SetVisibility(ESlateVisibility::Collapsed);
 
     // Full-screen pause treatment. Input ownership remains in the player controller.
     PauseOverlay = TruongSinhHUD::Panel(WidgetTree, TEXT("PauseOverlay"), FLinearColor(0.004f, 0.008f, 0.009f, 0.82f),
@@ -220,7 +286,20 @@ TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()
         NSLOCTEXT("TruongSinhHUD", "PauseHint", "Nhấn  ESC  để tiếp tục tiên lộ"), 12, TruongSinhHUD::Muted);
     PauseHint->SetJustification(ETextJustify::Center);
     TruongSinhHUD::AddVertical(PauseStack, PauseHint);
-    UOverlaySlot* PauseCardSlot = PauseRoot->AddChildToOverlay(PauseCard);
+    UOverlay* PauseCardFrameRoot = WidgetTree->ConstructWidget<UOverlay>(
+        UOverlay::StaticClass(), TEXT("PauseCardFrameRoot"));
+    if (UImage* PauseFrame = TruongSinhHUD::Frame(
+        WidgetTree, TEXT("PauseOrnateFrame"), OrnateFrameTexture, FVector2D(720.0f, 330.0f)))
+    {
+        TruongSinhHUD::FillOverlay(PauseCardFrameRoot, PauseFrame);
+    }
+    TruongSinhHUD::FillOverlay(PauseCardFrameRoot, PauseCard);
+    USizeBox* PauseFrameSize = WidgetTree->ConstructWidget<USizeBox>(
+        USizeBox::StaticClass(), TEXT("PauseFrameSize"));
+    PauseFrameSize->SetWidthOverride(720.0f);
+    PauseFrameSize->SetHeightOverride(330.0f);
+    PauseFrameSize->SetContent(PauseCardFrameRoot);
+    UOverlaySlot* PauseCardSlot = PauseRoot->AddChildToOverlay(PauseFrameSize);
     PauseCardSlot->SetHorizontalAlignment(HAlign_Center);
     PauseCardSlot->SetVerticalAlignment(VAlign_Center);
     UOverlaySlot* PauseSlot = Root->AddChildToOverlay(PauseOverlay);
@@ -266,9 +345,9 @@ void UTruongSinhRuntimeHUDWidget::ShowActivityResult(const FText& ResultTitle, c
     {
         ResultAccent->SetBrushColor(bSuccess ? TruongSinhHUD::Jade : TruongSinhHUD::Failure);
     }
-    if (ResultPanel)
+    if (ResultFrameRoot)
     {
-        ResultPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
+        ResultFrameRoot->SetVisibility(ESlateVisibility::HitTestInvisible);
     }
     RefreshState();
 }
@@ -292,11 +371,18 @@ void UTruongSinhRuntimeHUDWidget::RefreshState()
     }
 
     const FTruongSinhSimulationState State = Simulation->GetState();
-    const FString Realm = State.CurrentVessel.RealmId.Value.IsEmpty() ?
-        TEXT("Phàm Nhân") : State.CurrentVessel.RealmId.Value.Replace(TEXT("realm."), TEXT("")).Replace(TEXT("_"), TEXT(" "));
+    FString Realm = TEXT("PHÀM NHÂN");
+    if (!State.CurrentVessel.RealmId.Value.IsEmpty())
+    {
+        const FString& RealmId = State.CurrentVessel.RealmId.Value;
+        if (RealmId != TEXT("realm.mortal"))
+        {
+            Realm = RealmId.Replace(TEXT("realm."), TEXT("")).Replace(TEXT("_"), TEXT(" ")).ToUpper();
+        }
+    }
     if (RealmText)
     {
-        RealmText->SetText(FText::FromString(Realm.ToUpper()));
+        RealmText->SetText(FText::FromString(Realm));
     }
     if (CultivationText)
     {

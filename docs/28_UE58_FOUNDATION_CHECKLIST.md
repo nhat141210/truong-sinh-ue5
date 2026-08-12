@@ -24,6 +24,7 @@
 ## Visual gate
 
 - [x] Software Lumen GI, SSR (`r.ReflectionMethod=2`), VSM, TSR, no hardware RT.
+- [x] M2B foundation map `/Game/Maps/VisualTarget/L_M2B_Corridor` có corridor, temporary NPC và cultivation site; structural validation/ResavePackages/packaged load pass.
 - [ ] Một corridor, một NPC, một activity cue production-quality.
 - [ ] `stat unit/gpu`, ProfileGPU, Insights, memreport evidence.
 - [ ] RTX3060 1080p High avg60/1%45; Medium fallback.

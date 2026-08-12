@@ -19,10 +19,12 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 - Standalone Editor `-game` load map, đưa world lên play và khởi tạo deterministic sandbox không crash.
 - Windows Development portable package đã cook/stage/archive thành `.pak` + IoStore và chạy bằng executable độc lập; runtime log không có Error/Fatal/Ensure/Assertion.
 - Manny chính thức từ UE 5.8.1 Characters template đã hiển thị third-person với idle/jog/fall; runtime D3D screenshot xác nhận mesh/camera.
+- M2B có map riêng `/Game/Maps/VisualTarget/L_M2B_Corridor`: gate, corridor, water, ánh sáng/sương, caretaker tạm và cultivation site. Map qua structural validation, ResavePackages và được nạp bằng Development executable độc lập.
+- HUD native đã dùng frame ngọc/vàng có provenance rõ ràng; `realm.mortal` hiển thị là `PHÀM NHÂN` thay vì stable ID kỹ thuật.
 
 ## Chưa được gọi là hoàn thành cuối
 
-- Smoke map dùng primitive composition, chưa phải corridor/NPC/cinematic/material/environment production.
+- M2B corridor hiện vẫn dùng Engine primitives và material nền tảng; đây là bố cục/testable visual foundation, chưa phải corridor/NPC/cinematic/material/environment production.
 - Manny chỉ là visual foundation có provenance, chưa phải nhân vật tu tiên production; audio/VFX production chưa có.
 - PIE thao tác tay, performance capture RTX 3060, packaged Windows clean-machine và Shipping chưa qua gate.
 - Dev save migration cũ chưa triển khai; fallback lỗi save cần UI tiếng Việt hoàn chỉnh hơn.
@@ -34,7 +36,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 | M0 Product reset | COMPLETE | endless sandbox source/docs |
 | M1 Windows native | COMPLETE (smoke evidence) | packaged build không thuộc M1 |
 | M2A Golden loop | IMPLEMENTED, RUNTIME SMOKE | cần manual interaction/Continue capture để đóng gate UX |
-| M2B Visual target | FOUNDATION STARTED | mannequin/locomotion + runtime frame; còn corridor, NPC, activity cue, RTX3060 profile |
+| M2B Visual target | FOUNDATION VERIFIED | corridor loadable + temporary NPC/cultivation site + HUD frame; còn production art, activity cue, RTX3060 profile |
 | M3 Activity framework | SOURCE PROOF | registry/data/handlers/presentation runtime |
 | M4 Living world | NOT STARTED | canonical NPC/event/social/economy |
 | M5 Lifespan/soul | SOURCE PROOF | gameplay content/UI/save migration |
@@ -44,4 +46,4 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 
 1. Mở PIE, đi bộ/nhìn/nhảy/pause và thực hiện một cultivation interaction bằng E.
 2. Đóng/mở Standalone, xác nhận Continue hiện summary và tu vi không cộng hai lần.
-3. Dựng corridor M2B riêng theo art bible; smoke map không được dùng làm hình ảnh final.
+3. Thay primitive/Manny tạm bằng environment, character, animation, audio/VFX có quyền sử dụng và qua visual/performance gate; không dùng corridor hiện tại làm hình ảnh final.
