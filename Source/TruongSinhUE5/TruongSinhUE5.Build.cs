@@ -12,6 +12,8 @@ public class TruongSinhUE5 : ModuleRules
             "CoreUObject",
             "Engine",
             "InputCore",
+            "EnhancedInput",
+            "UMG",
             "TruongSinhCore",
             "TruongSinhData",
             "TruongSinhSimulation",
@@ -25,7 +27,9 @@ public class TruongSinhUE5 : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new string[]
         {
-            "Projects"
+            "Projects",
+            "Slate",
+            "SlateCore"
         });
     }
 }

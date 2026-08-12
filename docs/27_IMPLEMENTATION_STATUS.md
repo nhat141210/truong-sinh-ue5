@@ -1,53 +1,47 @@
 # Trạng thái triển khai
 
-## Cập nhật 2026-08-12
+## Cập nhật 2026-08-12 — Windows UE 5.8.1
 
-M0 product reset đã hoàn tất ở mức source/docs và static validation trên VPS. Repo đã chuyển sang endless sandbox + auto-resolution, nhưng chưa có UE5.8 Windows evidence.
+M1 Windows Native Foundation đã đạt build, automation, map package và Standalone smoke. M2A Golden Loop tối thiểu đã có đường đi `walk → interact → plan → resolve → commit → summary → autosave/Continue`, nhưng world hiện vẫn là smoke composition; chưa phải visual target hoặc bản phát hành cuối.
 
-## Có ở source
+## Đã có bằng chứng Windows
 
-- Module Core/Data/Simulation/Resolution/Narrative/Save/World/Presentation/UI.
-- Typed command, revision/idempotency, deterministic RNG và BLAKE3 state hash.
-- Canonical minutes, world layer, lifespan, soul và current vessel state.
-- Life rules: effective/remaining lifespan, possession kế thừa identity/property/relations, reset cultivation, emergency vessel fallback.
-- Shared activity plan/snapshot/preview/result/factors/presentation beats.
-- Pure auto-resolver proof với bounded seeded variation.
-- Save JSON schema v2 gồm time/soul/vessel/RNG/commands/pending replay và tamper check.
-- Source automation tests cho core/RNG/time/save/resolution/lifespan/possession.
-- Third-person legacy-input shell và DX12/SM6/Lumen config.
+- UE 5.8.1 changelist `56057345`; VS 2022 17.14.37; MSVC 14.44.35207; Windows SDK 10.0.26100.0.
+- UBT `TruongSinhUE5Editor Win64 Development` và `TruongSinhUE5 Win64 Development` pass.
+- Automation report: 12/12 Success, 0 warning/fail/not-run; gồm mouse-capture defaults và deterministic interaction selection.
+- Map thật `/Game/Maps/Dev/L_Dev_Smoke` có floor collision, PlayerStart, directional/sky/atmosphere/fog và cultivation interaction site.
+- Enhanced Input native: WASD, mouse look, Space, E và Esc; PlayerController quản lý mouse capture/lock và pause cursor.
+- Native HUD hiển thị canonical realm/cultivation/time/revision, contextual E prompt, result summary và pause overlay.
+- Cultivation resolver xuất deterministic outcome/progress/replay ID; simulation commit time + cultivation trong một revision.
+- Duplicate command không cộng thưởng hai lần; save v2 giữ pending replay; Continue hiển thị summary rồi clear marker mà không re-apply reward.
+- Autosave ghi `.tmp`, đọc lại và xác minh hash, rotate `.bak`, rồi promote current.
+- `ResavePackages -Verify` cho smoke map: 0 errors, 0 warnings.
+- Standalone Editor `-game` load map, đưa world lên play và khởi tạo deterministic sandbox không crash.
+- Windows Development portable package đã cook/stage/archive thành `.pak` + IoStore và chạy bằng executable độc lập; runtime log không có Error/Fatal/Ensure/Assertion.
+- Manny chính thức từ UE 5.8.1 Characters template đã hiển thị third-person với idle/jog/fall; runtime D3D screenshot xác nhận mesh/camera.
 
-## Chưa có/không được nói là có
+## Chưa được gọi là hoàn thành cuối
 
-- UHT/UBT/Automation pass.
-- Atomic file save, backup hoặc dev v1 migration.
-- Smoke map, Enhanced Input, activity UI/commit handler hoặc pending replay runtime.
-- NPC scheduler/event/home/economy.
-- Blueprint, animation, Niagara, audio, bốn zone hoặc asset.
-- PIE/Standalone/package/performance evidence.
+- Smoke map dùng primitive composition, chưa phải corridor/NPC/cinematic/material/environment production.
+- Manny chỉ là visual foundation có provenance, chưa phải nhân vật tu tiên production; audio/VFX production chưa có.
+- PIE thao tác tay, performance capture RTX 3060, packaged Windows clean-machine và Shipping chưa qua gate.
+- Dev save migration cũ chưa triển khai; fallback lỗi save cần UI tiếng Việt hoàn chỉnh hơn.
 
 ## Mốc
 
-| Mốc | Trạng thái | Việc mở khóa |
+| Mốc | Trạng thái | Bằng chứng/gate còn lại |
 |---|---|---|
-| M0 Product reset | COMPLETE (VPS STATIC) | source/docs mới, dependency tối thiểu và `validate-repo.sh` pass |
-| M1 Windows native | NOT STARTED | verify/build/automation/smoke map/input |
-| M2A Golden loop | NOT STARTED | activity commit + UI + save/Continue |
-| M2B Visual target | NOT STARTED | corridor + one NPC/activity cue + RTX3060 capture |
+| M0 Product reset | COMPLETE | endless sandbox source/docs |
+| M1 Windows native | COMPLETE (smoke evidence) | packaged build không thuộc M1 |
+| M2A Golden loop | IMPLEMENTED, RUNTIME SMOKE | cần manual interaction/Continue capture để đóng gate UX |
+| M2B Visual target | FOUNDATION STARTED | mannequin/locomotion + runtime frame; còn corridor, NPC, activity cue, RTX3060 profile |
 | M3 Activity framework | SOURCE PROOF | registry/data/handlers/presentation runtime |
-| M4 Living world | NOT STARTED | time/NPC/event/social/economy |
-| M5 Lifespan/soul | SOURCE PROOF | gameplay integration/content/UI/save file safety |
-| M6 Demo | NOT STARTED | four zones, content, both life routes |
+| M4 Living world | NOT STARTED | canonical NPC/event/social/economy |
+| M5 Lifespan/soul | SOURCE PROOF | gameplay content/UI/save migration |
+| M6 Demo | NOT STARTED | four zones và authored content |
 
-## Windows task tiếp theo
+## Việc tiếp theo
 
-1. Pull commit product reset; đọc Windows handoff/AGENTS.
-2. Chạy verify, Editor+Development build và toàn bộ `TruongSinh` automation.
-3. Sửa UHT/API exact UE5.8 có evidence; không tạo asset trước native pass.
-4. Tạo smoke map + Enhanced Input.
-5. Kết nối một cultivation plan vào simulation commit và save v2.
-
-## Blocker
-
-- VPS không có UE5.8/UHT/UBT.
-- Save v2 file I/O/migration chưa hoàn tất.
-- Source mới có thể cần chỉnh exact UE5.8 API/reflection trong build đầu.
+1. Mở PIE, đi bộ/nhìn/nhảy/pause và thực hiện một cultivation interaction bằng E.
+2. Đóng/mở Standalone, xác nhận Continue hiện summary và tu vi không cộng hai lần.
+3. Dựng corridor M2B riêng theo art bible; smoke map không được dùng làm hình ảnh final.

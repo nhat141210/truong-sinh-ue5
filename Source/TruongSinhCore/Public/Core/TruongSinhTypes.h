@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InstancedStruct.h"
+#include "StructUtils/InstancedStruct.h"
 #include "TruongSinhTypes.generated.h"
 
 /** Stable authored identifiers are used by data, tests and saves. Never derive them from display text. */

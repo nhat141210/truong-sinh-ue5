@@ -34,8 +34,6 @@ class TRUONGSINHPRESENTATION_API ITruongSinhWorldPresentation
     GENERATED_BODY()
 
 public:
-    virtual ~ITruongSinhWorldPresentation() = default;
-
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Truong Sinh|Presentation")
     void ApplyWorldSnapshot(const FTruongSinhWorldPresentationSnapshot& Snapshot);
 

@@ -1,15 +1,27 @@
 #include "Gameplay/TruongSinhCharacter.h"
 
+#include "Animation/AnimationAsset.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Engine/LocalPlayer.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Gameplay/TruongSinhPlayerController.h"
+#include "InputAction.h"
+#include "InputActionValue.h"
+#include "InputCoreTypes.h"
+#include "InputMappingContext.h"
 #include "Math/RotationMatrix.h"
+#include "UObject/ConstructorHelpers.h"
 
 ATruongSinhCharacter::ATruongSinhCharacter()
 {
+    PrimaryActorTick.bCanEverTick = true;
+
     GetCapsuleComponent()->InitCapsuleSize(42.0f, 96.0f);
 
     bUseControllerRotationPitch = false;
@@ -19,6 +31,28 @@ ATruongSinhCharacter::ATruongSinhCharacter()
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyMesh(
+        TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+    static ConstructorHelpers::FObjectFinder<UAnimationAsset> IdleAsset(
+        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle"));
+    static ConstructorHelpers::FObjectFinder<UAnimationAsset> JogAsset(
+        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.MF_Unarmed_Jog_Fwd"));
+    static ConstructorHelpers::FObjectFinder<UAnimationAsset> FallAsset(
+        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.MM_Fall_Loop"));
+
+    if (MannyMesh.Succeeded())
+    {
+        GetMesh()->SetSkeletalMesh(MannyMesh.Object);
+        GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -96.0f));
+        GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+        GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+    }
+
+    IdleAnimation = IdleAsset.Object;
+    JogAnimation = JogAsset.Object;
+    FallAnimation = FallAsset.Object;
+
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = 360.0f;
@@ -27,51 +61,164 @@ ATruongSinhCharacter::ATruongSinhCharacter()
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+
+    ExplorationMappingContext = CreateDefaultSubobject<UInputMappingContext>(TEXT("IMC_Exploration"));
+    MoveForwardAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_MoveForward"));
+    MoveBackwardAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_MoveBackward"));
+    MoveLeftAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_MoveLeft"));
+    MoveRightAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_MoveRight"));
+    LookYawAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_LookYaw"));
+    LookPitchAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_LookPitch"));
+    JumpAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Jump"));
+    InteractAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Interact"));
+    PauseAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Pause"));
+
+    LookYawAction->ValueType = EInputActionValueType::Axis1D;
+    LookPitchAction->ValueType = EInputActionValueType::Axis1D;
+    PauseAction->bTriggerWhenPaused = true;
+
+    ExplorationMappingContext->MapKey(MoveForwardAction, EKeys::W);
+    ExplorationMappingContext->MapKey(MoveBackwardAction, EKeys::S);
+    ExplorationMappingContext->MapKey(MoveLeftAction, EKeys::A);
+    ExplorationMappingContext->MapKey(MoveRightAction, EKeys::D);
+    ExplorationMappingContext->MapKey(LookYawAction, EKeys::MouseX);
+    ExplorationMappingContext->MapKey(LookPitchAction, EKeys::MouseY);
+    ExplorationMappingContext->MapKey(JumpAction, EKeys::SpaceBar);
+    ExplorationMappingContext->MapKey(InteractAction, EKeys::E);
+    ExplorationMappingContext->MapKey(PauseAction, EKeys::Escape);
+}
+
+void ATruongSinhCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+
+    ActiveAnimation = IdleAnimation;
+    if (ActiveAnimation)
+    {
+        GetMesh()->PlayAnimation(ActiveAnimation, true);
+    }
+}
+
+void ATruongSinhCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    UAnimationAsset* DesiredAnimation = IdleAnimation;
+    if (GetCharacterMovement()->IsFalling())
+    {
+        DesiredAnimation = FallAnimation;
+    }
+    else if (GetVelocity().SizeSquared2D() > FMath::Square(10.0f))
+    {
+        DesiredAnimation = JogAnimation;
+    }
+
+    if (DesiredAnimation && DesiredAnimation != ActiveAnimation)
+    {
+        ActiveAnimation = DesiredAnimation;
+        GetMesh()->PlayAnimation(ActiveAnimation, true);
+    }
+}
+
+void ATruongSinhCharacter::PawnClientRestart()
+{
+    Super::PawnClientRestart();
+
+    if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+            ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(ExplorationMappingContext);
+            Subsystem->AddMappingContext(ExplorationMappingContext, 0);
+        }
+    }
 }
 
 void ATruongSinhCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-    check(PlayerInputComponent);
-    PlayerInputComponent->BindAxis(TEXT("MoveForward"), this, &ATruongSinhCharacter::MoveForward);
-    PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ATruongSinhCharacter::MoveRight);
-    PlayerInputComponent->BindAxis(TEXT("Turn"), this, &ATruongSinhCharacter::Turn);
-    PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &ATruongSinhCharacter::LookUp);
-    PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &ACharacter::Jump);
-    PlayerInputComponent->BindAction(TEXT("Jump"), IE_Released, this, &ACharacter::StopJumping);
+    UEnhancedInputComponent* EnhancedInput = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+    EnhancedInput->BindAction(MoveForwardAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::MoveForward);
+    EnhancedInput->BindAction(MoveBackwardAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::MoveBackward);
+    EnhancedInput->BindAction(MoveLeftAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::MoveLeft);
+    EnhancedInput->BindAction(MoveRightAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::MoveRight);
+    EnhancedInput->BindAction(LookYawAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::LookYaw);
+    EnhancedInput->BindAction(LookPitchAction, ETriggerEvent::Triggered, this, &ATruongSinhCharacter::LookPitch);
+    EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+    EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+    EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &ATruongSinhCharacter::Interact);
+    EnhancedInput->BindAction(PauseAction, ETriggerEvent::Started, this, &ATruongSinhCharacter::TogglePause);
 }
 
-void ATruongSinhCharacter::MoveForward(float Value)
+void ATruongSinhCharacter::MoveForward(const FInputActionValue& Value)
 {
-    if (!Controller || FMath::IsNearlyZero(Value))
+    if (!Controller || !Value.Get<bool>())
     {
         return;
     }
 
     const FRotator ControlRotation = Controller->GetControlRotation();
     const FRotator YawRotation(0.0f, ControlRotation.Yaw, 0.0f);
-    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X), Value);
+    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X), 1.0f);
 }
 
-void ATruongSinhCharacter::MoveRight(float Value)
+void ATruongSinhCharacter::MoveBackward(const FInputActionValue& Value)
 {
-    if (!Controller || FMath::IsNearlyZero(Value))
+    if (Value.Get<bool>())
+    {
+        if (Controller)
+        {
+            const FRotator YawRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
+            AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X), -1.0f);
+        }
+    }
+}
+
+void ATruongSinhCharacter::MoveLeft(const FInputActionValue& Value)
+{
+    if (Controller && Value.Get<bool>())
+    {
+        const FRotator YawRotation(0.0f, Controller->GetControlRotation().Yaw, 0.0f);
+        AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), -1.0f);
+    }
+}
+
+void ATruongSinhCharacter::MoveRight(const FInputActionValue& Value)
+{
+    if (!Controller || !Value.Get<bool>())
     {
         return;
     }
 
     const FRotator ControlRotation = Controller->GetControlRotation();
     const FRotator YawRotation(0.0f, ControlRotation.Yaw, 0.0f);
-    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), Value);
+    AddMovementInput(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y), 1.0f);
 }
 
-void ATruongSinhCharacter::Turn(float Value)
+void ATruongSinhCharacter::LookYaw(const FInputActionValue& Value)
 {
-    AddControllerYawInput(Value);
+    AddControllerYawInput(Value.Get<float>());
 }
 
-void ATruongSinhCharacter::LookUp(float Value)
+void ATruongSinhCharacter::LookPitch(const FInputActionValue& Value)
 {
-    AddControllerPitchInput(Value);
+    AddControllerPitchInput(-Value.Get<float>());
+}
+
+void ATruongSinhCharacter::Interact()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->TryInteract();
+    }
+}
+
+void ATruongSinhCharacter::TogglePause()
+{
+    if (ATruongSinhPlayerController* PlayerController = Cast<ATruongSinhPlayerController>(Controller))
+    {
+        PlayerController->TogglePauseMenu();
+    }
 }

@@ -14,3 +14,5 @@
 | DEC-026 | 2026-08-12 | LOCKED | Phi thăng chưa thuộc release đầu; tương lai mở WorldLayer, không kết thúc save |
 | DEC-027 | 2026-08-12 | LOCKED | RTX3060 High: Software Lumen, SSR mặc định, no hardware RT, 1080p avg60/1%45 |
 | DEC-028 | 2026-08-12 | LOCKED | Save schema v2 cho sandbox; no commercial v1 compatibility, dev migration còn gate riêng |
+| DEC-029 | 2026-08-12 | LOCKED | Development package phải là archive portable `.pak`/IoStore có prerequisites; source Game executable không thay thế cook/stage/package |
+| DEC-030 | 2026-08-12 | TEMPORARY | Dùng Manny và ba animation locomotion từ UE 5.8.1 Characters template làm visual foundation có provenance; phải thay bằng nhân vật tu tiên được duyệt ở character-art pass |

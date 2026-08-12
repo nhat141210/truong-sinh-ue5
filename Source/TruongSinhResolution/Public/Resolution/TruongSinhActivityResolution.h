@@ -179,6 +179,15 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
     int64 TimeAdvancedMinutes = 0;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int64 CultivationProgressUnits = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId OutcomeId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId ReplayId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     TArray<FTruongSinhResolutionFactor> Factors;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")

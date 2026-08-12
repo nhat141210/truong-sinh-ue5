@@ -162,6 +162,28 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
         Result.Outcome = ETruongSinhResolutionOutcome::Failure;
     }
 
+    switch (Result.Outcome)
+    {
+    case ETruongSinhResolutionOutcome::GreatSuccess:
+        Result.CultivationProgressUnits = 1200;
+        Result.OutcomeId.Value = TEXT("cultivation.outcome.great_success");
+        break;
+    case ETruongSinhResolutionOutcome::Success:
+        Result.CultivationProgressUnits = 800;
+        Result.OutcomeId.Value = TEXT("cultivation.outcome.success");
+        break;
+    case ETruongSinhResolutionOutcome::PartialSuccess:
+        Result.CultivationProgressUnits = 350;
+        Result.OutcomeId.Value = TEXT("cultivation.outcome.partial_success");
+        break;
+    default:
+        Result.CultivationProgressUnits = 0;
+        Result.OutcomeId.Value = TEXT("cultivation.outcome.failure");
+        break;
+    }
+    Result.ReplayId.Value = FString::Printf(TEXT("replay.cultivation.%s"),
+        *Plan.Action.CommandId.ToString(EGuidFormats::Digits).ToLower());
+
     AddBeat(Result.Beats, 0, TruongSinhResolutionIds::BeatApproach,
         TruongSinhResolutionIds::CueApproach, Snapshot.PerformerPower);
     AddBeat(Result.Beats, 1, TruongSinhResolutionIds::BeatResolve,

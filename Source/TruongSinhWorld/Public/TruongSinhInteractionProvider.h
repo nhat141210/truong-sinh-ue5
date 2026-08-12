@@ -29,6 +29,16 @@ struct TRUONGSINHWORLD_API FTruongSinhInteractionOffer
     bool bEnabled = true;
 };
 
+/** Pure, deterministic offer selection shared by runtime targeting and automation. */
+class TRUONGSINHWORLD_API FTruongSinhInteractionSelection
+{
+public:
+    static bool SelectBestOffer(
+        const TArray<FTruongSinhInteractionOffer>& Offers,
+        float DistanceCentimeters,
+        FTruongSinhInteractionOffer& OutOffer);
+};
+
 /** World actors offer commands; only the application facade may validate and commit them. */
 UINTERFACE(MinimalAPI, Blueprintable)
 class UTruongSinhInteractionProvider : public UInterface
@@ -41,8 +51,6 @@ class TRUONGSINHWORLD_API ITruongSinhInteractionProvider
     GENERATED_BODY()
 
 public:
-    virtual ~ITruongSinhInteractionProvider() = default;
-
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Truong Sinh|Interaction")
     TArray<FTruongSinhInteractionOffer> GetInteractionOffers(FTruongSinhStableId InstigatorId) const;
 

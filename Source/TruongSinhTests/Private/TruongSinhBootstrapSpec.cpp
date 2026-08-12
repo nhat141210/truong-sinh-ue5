@@ -2,11 +2,13 @@
 
 #include "Core/TruongSinhTypes.h"
 #include "Core/TruongSinhDeterministicRng.h"
+#include "GameFramework/InputSettings.h"
 #include "Misc/AutomationTest.h"
 #include "Resolution/TruongSinhActivityResolution.h"
 #include "Save/TruongSinhSaveGameV2.h"
 #include "Simulation/TruongSinhGameSimulation.h"
 #include "Simulation/TruongSinhLifeState.h"
+#include "TruongSinhInteractionProvider.h"
 
 namespace
 {
@@ -50,6 +52,71 @@ bool FTruongSinhStableIdSpec::RunTest(const FString& Parameters)
     FTruongSinhStableId SpacedId;
     SpacedId.Value = TEXT("technique example");
     TestFalse(TEXT("Stable identifiers cannot contain spaces"), SpacedId.IsValid());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhMouseCaptureDefaultsSpec,
+    "TruongSinh.Input.MouseCaptureDefaults",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhMouseCaptureDefaultsSpec::RunTest(const FString& Parameters)
+{
+    const UInputSettings* InputSettings = GetDefault<UInputSettings>();
+    TestNotNull(TEXT("Input settings are available"), InputSettings);
+    if (!InputSettings)
+    {
+        return false;
+    }
+
+    TestTrue(TEXT("Game captures the mouse when the viewport launches"),
+        static_cast<bool>(InputSettings->bCaptureMouseOnLaunch));
+    TestEqual(TEXT("Gameplay capture includes the initial mouse down"),
+        InputSettings->DefaultViewportMouseCaptureMode,
+        EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
+    TestEqual(TEXT("Captured mouse remains locked to the viewport"),
+        InputSettings->DefaultViewportMouseLockMode,
+        EMouseLockMode::LockOnCapture);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhInteractionSelectionSpec,
+    "TruongSinh.World.InteractionSelection",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhInteractionSelectionSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhInteractionOffer DisabledHighPriority;
+    DisabledHighPriority.CandidateId.Value = TEXT("interaction.disabled");
+    DisabledHighPriority.Priority = 1000;
+    DisabledHighPriority.bEnabled = false;
+
+    FTruongSinhInteractionOffer OutOfRange;
+    OutOfRange.CandidateId.Value = TEXT("interaction.too_far");
+    OutOfRange.Priority = 500;
+    OutOfRange.MaximumRangeCentimeters = 199.0f;
+
+    FTruongSinhInteractionOffer StableTieB;
+    StableTieB.CandidateId.Value = TEXT("interaction.tie_b");
+    StableTieB.Priority = 100;
+    StableTieB.MaximumRangeCentimeters = 200.0f;
+
+    FTruongSinhInteractionOffer StableTieA = StableTieB;
+    StableTieA.CandidateId.Value = TEXT("interaction.tie_a");
+
+    const TArray<FTruongSinhInteractionOffer> Offers =
+        {DisabledHighPriority, OutOfRange, StableTieB, StableTieA};
+    FTruongSinhInteractionOffer Selected;
+    TestTrue(TEXT("An enabled offer at the exact range boundary is discoverable"),
+        FTruongSinhInteractionSelection::SelectBestOffer(Offers, 200.0f, Selected));
+    TestEqual(TEXT("Disabled and out-of-range offers are ignored; stable ID breaks priority ties"),
+        Selected.CandidateId.Value, FString(TEXT("interaction.tie_a")));
+
+    Selected = StableTieA;
+    TestFalse(TEXT("Negative distances are rejected"),
+        FTruongSinhInteractionSelection::SelectBestOffer(Offers, -1.0f, Selected));
+    TestFalse(TEXT("A failed selection clears stale output"), Selected.CandidateId.IsValid());
     return true;
 }
 
@@ -330,6 +397,67 @@ bool FTruongSinhPossessionSpec::RunTest(const FString& Parameters)
     TestEqual(TEXT("Lost body produces emergency vessel instead of game over"),
         Fallback.Outcome, ETruongSinhPossessionOutcome::EmergencyVessel);
     TestTrue(TEXT("Emergency vessel is playable"), Fallback.Vessel.VesselId.IsValid());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhCultivationCommitSpec,
+    "TruongSinh.GoldenLoop.CultivationCommitAndReplay",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhCultivationCommitSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(61, 62, 63, 64);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitCultivationActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Action.Sequence = 0;
+    Plan.Type = ETruongSinhActivityType::Cultivation;
+    Plan.ActivityId.Value = TEXT("activity.cultivation.test");
+    Plan.MethodId.Value = TEXT("method.test");
+    Plan.FacilityId.Value = TEXT("facility.test");
+    Plan.LocationId.Value = TEXT("location.test");
+    Plan.DurationMinutes = 480;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 7200;
+    Snapshot.DifficultyOrTargetPower = 6500;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolved = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestTrue(TEXT("Resolved cultivation has stable replay ID"), Resolved.ReplayId.IsValid());
+
+    FTruongSinhCultivationCommitPayload Payload;
+    Payload.Minutes = Resolved.TimeAdvancedMinutes;
+    Payload.CultivationProgressUnits = Resolved.CultivationProgressUnits;
+    Payload.OutcomeId = Resolved.OutcomeId;
+    Payload.ReplayId = Resolved.ReplayId;
+    Plan.Action.Payload.InitializeAs<FTruongSinhCultivationCommitPayload>(Payload);
+
+    const FTruongSinhActionResult First = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Cultivation commits"), First.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("Cultivation advances exact time"), State.ElapsedMinutes, 480ll);
+    TestEqual(TEXT("Cultivation progress is canonical"), State.CurrentVessel.CultivationUnits,
+        Resolved.CultivationProgressUnits);
+    const int64 ProgressAfterCommit = State.CurrentVessel.CultivationUnits;
+    const FTruongSinhActionResult Duplicate = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Duplicate command is rejected"), Duplicate.Status, ETruongSinhActionStatus::Rejected);
+    TestEqual(TEXT("Duplicate does not apply progress twice"), State.CurrentVessel.CultivationUnits,
+        ProgressAfterCommit);
+
+    FTruongSinhSaveGameV2 Save;
+    Save.Simulation = State;
+    Save.PayloadHash = FTruongSinhGameSimulation::ComputeStateHash(State);
+    Save.PendingReplayId = Resolved.ReplayId;
+    FString Json;
+    FString Error;
+    TestTrue(TEXT("Golden loop save serializes"), FTruongSinhSaveJsonCodecV2::Serialize(Save, Json, Error));
+    FTruongSinhSaveGameV2 Loaded;
+    TestTrue(TEXT("Golden loop save reloads"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
+    TestEqual(TEXT("Pending replay survives Continue"), Loaded.PendingReplayId.Value, Resolved.ReplayId.Value);
+    TestEqual(TEXT("Reload keeps committed progress"), Loaded.Simulation.CurrentVessel.CultivationUnits,
+        ProgressAfterCommit);
     return true;
 }
 

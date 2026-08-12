@@ -4,7 +4,7 @@ Trạng thái: `NOT_STARTED`, `SOURCE_ONLY`, `WINDOWS_VERIFIED`, `SLICE_PASS`, `
 
 | ID | Capability | Acceptance chính | Trạng thái |
 |---|---|---|---|
-| CORE-001 | Command deterministic/idempotent | Retry không commit hai lần; cùng seed/input cùng hash | SOURCE_ONLY |
+| CORE-001 | Command deterministic/idempotent | Retry không commit hai lần; cùng seed/input cùng hash | WINDOWS_VERIFIED |
 | TIME-001 | Hybrid exploration time | 30/60/120 FPS cho cùng game time quantum | NOT_STARTED |
 | TIME-002 | Action time skip | Tu luyện/travel/craft cập nhật scheduler đúng thứ tự | NOT_STARTED |
 | LIFE-001 | Effective lifespan | Realm/technique/pill/damage cập nhật remaining lifespan | SOURCE_ONLY |

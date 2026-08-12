@@ -88,6 +88,9 @@ $arguments = @(
     "-cook",
     "-stage",
     "-package",
+    "-pak",
+    "-iostore",
+    "-prereqs",
     "-archive",
     "-archivedirectory=$archiveFullPath",
     "-utf8output"

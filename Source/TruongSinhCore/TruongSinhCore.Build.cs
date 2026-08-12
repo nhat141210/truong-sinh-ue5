@@ -8,8 +8,7 @@ public class TruongSinhCore : ModuleRules
         PublicDependencyModuleNames.AddRange(new string[]
         {
             "Core",
-            "CoreUObject",
-            "StructUtils"
+            "CoreUObject"
         });
     }
 }

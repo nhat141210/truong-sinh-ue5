@@ -19,6 +19,25 @@ struct TRUONGSINHSIMULATION_API FTruongSinhAdvanceTimePayload : public FTruongSi
     int64 Minutes = 1;
 };
 
+/** Resolved cultivation delta. Resolution authors it; simulation validates and commits it atomically. */
+USTRUCT(BlueprintType)
+struct TRUONGSINHSIMULATION_API FTruongSinhCultivationCommitPayload : public FTruongSinhActionPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "1"))
+    int64 Minutes = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 CultivationProgressUnits = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OutcomeId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ReplayId;
+};
+
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
 USTRUCT(BlueprintType)
 struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
@@ -61,6 +80,7 @@ class TRUONGSINHSIMULATION_API FTruongSinhGameSimulation
 {
 public:
     static const TCHAR* AdvanceTimeActionId;
+    static const TCHAR* CommitCultivationActionId;
 
     static FTruongSinhSimulationState CreateNewGame(int64 MasterSeed);
     static FTruongSinhActionResult Execute(

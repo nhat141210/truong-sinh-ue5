@@ -6,6 +6,7 @@
 namespace TruongSinhSimulationIds
 {
 constexpr TCHAR EventTimeAdvanced[] = TEXT("core.time_advanced");
+constexpr TCHAR EventCultivationCommitted[] = TEXT("cultivation.committed");
 constexpr TCHAR ReasonDuplicateCommand[] = TEXT("core.reject.duplicate_command");
 constexpr TCHAR ReasonInvalidCommand[] = TEXT("core.reject.invalid_command");
 constexpr TCHAR ReasonInvalidPayload[] = TEXT("core.reject.invalid_payload");
@@ -15,6 +16,7 @@ constexpr TCHAR ReasonUnknownAction[] = TEXT("core.reject.unknown_action");
 }
 
 const TCHAR* FTruongSinhGameSimulation::AdvanceTimeActionId = TEXT("world.advance_time");
+const TCHAR* FTruongSinhGameSimulation::CommitCultivationActionId = TEXT("cultivation.commit_resolved");
 
 FTruongSinhSimulationState FTruongSinhGameSimulation::CreateNewGame(const int64 MasterSeed)
 {
@@ -44,17 +46,26 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonRevisionMismatch);
     }
-    if (Command.ActionId.Value != AdvanceTimeActionId)
+    const FTruongSinhAdvanceTimePayload* AdvancePayload =
+        Command.ActionId.Value == AdvanceTimeActionId ? Command.Payload.GetPtr<FTruongSinhAdvanceTimePayload>() : nullptr;
+    const FTruongSinhCultivationCommitPayload* CultivationPayload =
+        Command.ActionId.Value == CommitCultivationActionId ?
+            Command.Payload.GetPtr<FTruongSinhCultivationCommitPayload>() : nullptr;
+    if (!AdvancePayload && !CultivationPayload)
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonUnknownAction);
     }
 
-    const FTruongSinhAdvanceTimePayload* Payload = Command.Payload.GetPtr<FTruongSinhAdvanceTimePayload>();
-    if (!Payload || Payload->Minutes <= 0)
+    const int64 Minutes = AdvancePayload ? AdvancePayload->Minutes : CultivationPayload->Minutes;
+    if (Minutes <= 0 || (CultivationPayload &&
+        (CultivationPayload->CultivationProgressUnits < 0 || !CultivationPayload->OutcomeId.IsValid() ||
+            !CultivationPayload->ReplayId.IsValid())))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
-    if (InOutState.ElapsedMinutes > MAX_int64 - Payload->Minutes)
+    if (InOutState.ElapsedMinutes > MAX_int64 - Minutes ||
+        (CultivationPayload && InOutState.CurrentVessel.CultivationUnits >
+            MAX_int64 - CultivationPayload->CultivationProgressUnits))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
     }
@@ -64,7 +75,7 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     Result.ActionId = Command.ActionId;
     Result.PreviousWorldRevision = InOutState.WorldRevision;
 
-    const int64 NewElapsedMinutes = InOutState.ElapsedMinutes + Payload->Minutes;
+    const int64 NewElapsedMinutes = InOutState.ElapsedMinutes + Minutes;
     const int64 PreviousWholeDays = InOutState.ElapsedMinutes / 1440;
     const int64 NewWholeDays = NewElapsedMinutes / 1440;
     const int64 BiologicalDaysAdded = NewWholeDays - PreviousWholeDays;
@@ -74,13 +85,25 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     }
     InOutState.ElapsedMinutes = NewElapsedMinutes;
     InOutState.CurrentVessel.Lifespan.BiologicalAgeDays += BiologicalDaysAdded;
+    if (CultivationPayload)
+    {
+        InOutState.CurrentVessel.CultivationUnits += CultivationPayload->CultivationProgressUnits;
+    }
     ++InOutState.WorldRevision;
     InOutState.CommittedCommandIds.Add(Command.CommandId);
 
     FTruongSinhDomainEvent Event;
-    Event.EventTypeId.Value = TruongSinhSimulationIds::EventTimeAdvanced;
+    Event.EventTypeId.Value = CultivationPayload ? TruongSinhSimulationIds::EventCultivationCommitted :
+        TruongSinhSimulationIds::EventTimeAdvanced;
     Event.Sequence = 0;
-    Event.Payload.InitializeAs<FTruongSinhAdvanceTimePayload>(*Payload);
+    if (CultivationPayload)
+    {
+        Event.Payload.InitializeAs<FTruongSinhCultivationCommitPayload>(*CultivationPayload);
+    }
+    else
+    {
+        Event.Payload.InitializeAs<FTruongSinhAdvanceTimePayload>(*AdvancePayload);
+    }
     Result.Events.Add(MoveTemp(Event));
     Result.NewWorldRevision = InOutState.WorldRevision;
     Result.StateHash = ComputeStateHash(InOutState);

@@ -49,10 +49,25 @@ int64 SaturatingAddNonNegative(const int64 Left, const int64 Right)
 
 int64 FTruongSinhLifespanState::EffectiveLifespanDays() const
 {
-    int64 Positive = SaturatingAddNonNegative(BaseLifespanDays, RealmBonusDays);
-    Positive = SaturatingAddNonNegative(Positive, TechniqueBonusDays);
-    Positive = SaturatingAddNonNegative(Positive, PillAndResourceBonusDays);
-    return FMath::Max<int64>(0, Positive - FMath::Max<int64>(0, PermanentDamageDays));
+    int64 RemainingDamage = FMath::Max<int64>(0, PermanentDamageDays);
+    int64 EffectiveDays = 0;
+    const int64 PositiveComponents[] =
+    {
+        BaseLifespanDays,
+        RealmBonusDays,
+        TechniqueBonusDays,
+        PillAndResourceBonusDays
+    };
+
+    for (const int64 Component : PositiveComponents)
+    {
+        const int64 SafeComponent = FMath::Max<int64>(0, Component);
+        const int64 AppliedDamage = FMath::Min(SafeComponent, RemainingDamage);
+        RemainingDamage -= AppliedDamage;
+        EffectiveDays = SaturatingAddNonNegative(EffectiveDays, SafeComponent - AppliedDamage);
+    }
+
+    return EffectiveDays;
 }
 
 int64 FTruongSinhLifespanState::RemainingLifespanDays() const

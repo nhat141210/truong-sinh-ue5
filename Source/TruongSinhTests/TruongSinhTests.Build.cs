@@ -13,7 +13,8 @@ public class TruongSinhTests : ModuleRules
             "TruongSinhCore",
             "TruongSinhSimulation",
             "TruongSinhResolution",
-            "TruongSinhSave"
+            "TruongSinhSave",
+            "TruongSinhWorld"
         });
     }
 }
