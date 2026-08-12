@@ -1,7 +1,6 @@
 [CmdletBinding()]
 param(
     [string]$Root = (Split-Path -Parent $PSScriptRoot),
-    [switch]$IncludeFuture3D,
     [switch]$IncludeMcpTools
 )
 
@@ -74,11 +73,6 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 $lock = Get-Content -LiteralPath $lockPath -Raw | ConvertFrom-Json
 foreach ($donor in $lock.donors) {
     $isOptional = ($null -ne $donor.PSObject.Properties["optional"]) -and [bool]$donor.optional
-
-    if ($isOptional -and $donor.id -eq "soulgame" -and -not $IncludeFuture3D) {
-        Write-Host "[SKIP] soulgame is future-3D reference; pass -IncludeFuture3D to clone it."
-        continue
-    }
 
     if ($isOptional -and $donor.id -eq "monolith" -and -not $IncludeMcpTools) {
         Write-Host "[SKIP] monolith is optional MCP tooling; pass -IncludeMcpTools to clone it."

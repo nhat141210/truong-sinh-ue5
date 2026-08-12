@@ -14,13 +14,16 @@ constexpr TCHAR ReasonRevisionMismatch[] = TEXT("core.reject.revision_mismatch")
 constexpr TCHAR ReasonUnknownAction[] = TEXT("core.reject.unknown_action");
 }
 
-const TCHAR* FTruongSinhGameSimulation::AdvanceTimeActionId = TEXT("core.advance_time");
+const TCHAR* FTruongSinhGameSimulation::AdvanceTimeActionId = TEXT("world.advance_time");
 
 FTruongSinhSimulationState FTruongSinhGameSimulation::CreateNewGame(const int64 MasterSeed)
 {
     FTruongSinhSimulationState State;
     State.Rng.MasterSeed = MasterSeed;
     State.Rng.AlgorithmVersion = 1;
+    State.WorldLayerId.Value = TEXT("world.lower_realm");
+    State.Soul = FTruongSinhLifeRules::CreateInitialSoul();
+    State.CurrentVessel = FTruongSinhLifeRules::CreateInitialVessel();
     return State;
 }
 
@@ -47,11 +50,11 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     }
 
     const FTruongSinhAdvanceTimePayload* Payload = Command.Payload.GetPtr<FTruongSinhAdvanceTimePayload>();
-    if (!Payload || Payload->DayCount <= 0)
+    if (!Payload || Payload->Minutes <= 0)
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
-    if (InOutState.ElapsedDays > MAX_int64 - static_cast<int64>(Payload->DayCount))
+    if (InOutState.ElapsedMinutes > MAX_int64 - Payload->Minutes)
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
     }
@@ -61,7 +64,16 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     Result.ActionId = Command.ActionId;
     Result.PreviousWorldRevision = InOutState.WorldRevision;
 
-    InOutState.ElapsedDays += Payload->DayCount;
+    const int64 NewElapsedMinutes = InOutState.ElapsedMinutes + Payload->Minutes;
+    const int64 PreviousWholeDays = InOutState.ElapsedMinutes / 1440;
+    const int64 NewWholeDays = NewElapsedMinutes / 1440;
+    const int64 BiologicalDaysAdded = NewWholeDays - PreviousWholeDays;
+    if (InOutState.CurrentVessel.Lifespan.BiologicalAgeDays > MAX_int64 - BiologicalDaysAdded)
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
+    }
+    InOutState.ElapsedMinutes = NewElapsedMinutes;
+    InOutState.CurrentVessel.Lifespan.BiologicalAgeDays += BiologicalDaysAdded;
     ++InOutState.WorldRevision;
     InOutState.CommittedCommandIds.Add(Command.CommandId);
 
@@ -97,11 +109,50 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     }
     RngStreams.Sort();
 
+    const auto SortedStableIds = [](const TArray<FTruongSinhStableId>& Ids)
+    {
+        TArray<FString> Values;
+        Values.Reserve(Ids.Num());
+        for (const FTruongSinhStableId& Id : Ids)
+        {
+            Values.Add(Id.Value);
+        }
+        Values.Sort();
+        return Values;
+    };
+
+    const TArray<FString> KnownTechniques = SortedStableIds(State.Soul.KnownTechniqueIds);
+    const TArray<FString> Memories = SortedStableIds(State.Soul.MemoryIds);
+    const TArray<FString> VesselHistory = SortedStableIds(State.Soul.VesselHistoryIds);
+    const TArray<FString> Relationships = SortedStableIds(State.CurrentVessel.RelationshipIds);
+    const TArray<FString> OwnedAssets = SortedStableIds(State.CurrentVessel.OwnedAssetIds);
+
     const FString Canonical = FString::Printf(
-        TEXT("schema=%d|days=%lld|revision=%lld|rng=%d:%lld|streams=%s|commands=%s"),
+        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s"),
         State.SchemaVersion,
-        static_cast<long long>(State.ElapsedDays),
+        static_cast<long long>(State.ElapsedMinutes),
+        static_cast<long long>(State.ExplorationRemainderMillis),
         static_cast<long long>(State.WorldRevision),
+        *State.WorldLayerId.Value,
+        *State.Soul.SoulId.Value,
+        State.Soul.IntegrityUnits,
+        *FString::Join(KnownTechniques, TEXT(",")),
+        *FString::Join(Memories, TEXT(",")),
+        *FString::Join(VesselHistory, TEXT(",")),
+        *State.CurrentVessel.VesselId.Value,
+        *State.CurrentVessel.IdentityId.Value,
+        *State.CurrentVessel.SpiritualRootId.Value,
+        *State.CurrentVessel.RealmId.Value,
+        *State.CurrentVessel.SectId.Value,
+        static_cast<long long>(State.CurrentVessel.CultivationUnits),
+        static_cast<long long>(State.CurrentVessel.Lifespan.BiologicalAgeDays),
+        static_cast<long long>(State.CurrentVessel.Lifespan.BaseLifespanDays),
+        static_cast<long long>(State.CurrentVessel.Lifespan.RealmBonusDays),
+        static_cast<long long>(State.CurrentVessel.Lifespan.TechniqueBonusDays),
+        static_cast<long long>(State.CurrentVessel.Lifespan.PillAndResourceBonusDays),
+        static_cast<long long>(State.CurrentVessel.Lifespan.PermanentDamageDays),
+        *FString::Join(Relationships, TEXT(",")),
+        *FString::Join(OwnedAssets, TEXT(",")),
         State.Rng.AlgorithmVersion,
         static_cast<long long>(State.Rng.MasterSeed),
         *FString::Join(RngStreams, TEXT(",")),

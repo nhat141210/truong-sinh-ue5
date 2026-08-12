@@ -2,52 +2,56 @@
 
 Đọc toàn bộ các tài liệu sau theo đúng thứ tự trước khi sửa source, Blueprint, map, Data Asset hoặc content:
 
-1. `docs/00_START_HERE.md`
-2. `docs/02_PARITY_CONTRACT.md`
-3. `docs/03_REFERENCE_VERSION.md`
-4. `docs/05_PARITY_MATRIX.md`
+1. `docs/WINDOWS_AGENT_HANDOFF.md`
+2. `docs/00_START_HERE.md`
+3. `docs/02_ENDLESS_SANDBOX_CONTRACT.md`
+4. `docs/05_EXPERIENCE_CAPABILITY_MATRIX.md`
 5. `docs/06_GAME_DESIGN_DOCUMENT.md`
-6. `docs/11_TECHNICAL_ARCHITECTURE.md`
-7. `docs/14_WORLD_AND_LEVEL_DESIGN.md`
-8. `docs/15_ART_DIRECTION.md`
-9. `docs/22_PRODUCTION_ROADMAP.md`
-10. `docs/24_WINDOWS_WORKFLOW.md`
-11. `docs/25_AI_AGENT_PLAYBOOK.md`
-12. `docs/28_UE58_FOUNDATION_CHECKLIST.md`
-13. `docs/27_IMPLEMENTATION_STATUS.md`
+6. `docs/08_AUTO_RESOLUTION_SPEC.md`
+7. `docs/11_TECHNICAL_ARCHITECTURE.md`
+8. `docs/13_SAVE_AND_DETERMINISM.md`
+9. `docs/14_WORLD_AND_LEVEL_DESIGN.md`
+10. `docs/15_ART_DIRECTION.md`
+11. `docs/19_PERFORMANCE_BUDGET.md`
+12. `docs/22_PRODUCTION_ROADMAP.md`
+13. `docs/25_AI_AGENT_PLAYBOOK.md`
+14. `docs/27_IMPLEMENTATION_STATUS.md`
 
-## Mục tiêu làm việc
+## Mục tiêu đã khóa
 
-- Đây là game Windows UE 5.8 C++/Blueprint, góc nhìn thứ ba, open-zone, trình bày 3D bán hiện thực.
-- `觅长生` là benchmark hành vi cho parity; gameplay simulation phải độc lập với animation, widget và level actor.
-- V1 dùng chiến đấu theo lượt, linh khí/ngũ hành và combat replay 3D. Không tự chuyển thành action combat.
-- Tất cả chữ hiện cho người chơi là tiếng Việt đơn giản; chuỗi phải nằm trong String Table hoặc data localization, không chôn trong logic.
+- Đây là sandbox-life simulation tu tiên Windows bằng Unreal Engine 5.8, C++/Blueprint, góc nhìn thứ ba và open-zone.
+- Mục tiêu là cảm giác nhìn, đi và sống trong thế giới tu tiên bán hiện thực; không sao chép quy mô, content, asset hoặc action combat của game tham khảo.
+- Không có main quest, ending hoặc credits bắt buộc. Một save theo một nguyên thần qua nhiều thân xác và tiếp tục không giới hạn bởi một kết cục authored.
+- Người chơi chuẩn bị và lựa chọn; các hoạt động lớn dùng chung pipeline `Plan → Resolve → Commit → Present`.
+- Đấu pháp, tu luyện, đột phá, luyện đan và bố trận tự giải quyết deterministic. Không thêm thao tác phản xạ/minigame riêng.
+- Phi thăng chưa thuộc bản đầu; sau này chỉ mở world layer mới, không kết thúc save.
 
 ## Quy tắc không được phá
 
-- Không tự bịa công thức, dữ liệu, phần thưởng, điều kiện hoặc chi phí thời gian khi reference audit chưa xác minh. Ghi `UNKNOWN` vào parity matrix và tạo thí nghiệm.
-- Không thay đổi lịch game vì người chơi đi bộ trong level 3D. Chỉ `Chronology` được quyền tiến thời gian.
-- Không đưa asset, đoạn thoại, cốt truyện, dữ liệu trích xuất hoặc media từ game tham chiếu vào Git, `Content/` hoặc bản build. `ReferenceVault/` là thư mục local, audit-only và bị ignore.
-- Không dùng Blueprint làm nguồn dữ liệu hoặc nơi quyết định kết quả simulation. C++ subsystem + data là nguồn đúng; Blueprint chỉ presentation/adapter.
-- Không thêm content ngoài phạm vi vertical slice trước khi visual gate và core parity gate của slice đạt pass.
-- Không thêm multiplayer, EOS, Steam Online, cloud save, workshop, analytics hoặc runtime service nếu chưa có quyết định mới trong `docs/26_DECISION_LOG.md`.
-- Không dùng random không seed trong gameplay. Mọi RNG phải có seed, state và replay/save coverage.
-- Không force-push, reset hard, ghi đè thay đổi của người khác hoặc chạy codegen/formatter làm thay đổi nhiều file khi chưa xem diff.
+- Simulation C++ + data là authority. Actor, Widget, animation, Niagara, camera và level Blueprint không được quyết định kết quả.
+- Không dùng `FMath::Rand`, random không seed, đồng hồ hệ điều hành hoặc FPS làm entropy gameplay.
+- Không runtime LLM, AI-chat/voice, backend, multiplayer, EOS, PvP, cloud save hoặc tiến triển ngoại tuyến.
+- Không biến dự án thành seamless open world. Bản đầu chỉ bốn zone tải riêng; mỗi lần một zone.
+- Không thêm action combat, hitbox, combo, dodge, parry, boss mechanics hoặc Behavior Tree chiến đấu.
+- Không tạo minigame cho luyện đan, bố trận, chế tạo hay độ kiếp. Activity mới phải dùng resolver/presentation framework chung.
+- Không import hàng loạt asset. Mọi asset ngoài dự án có provenance; `ReferenceVault/`, `_external/`, cache, build và secret không được commit.
+- Không tuyên bố map, Blueprint, VFX, build, PIE, FPS hoặc package đã PASS nếu chưa có evidence Windows UE5.8.
+- Không force-push, reset hard hoặc ghi đè thay đổi chưa hiểu.
 
 ## Quy trình thay đổi
 
-1. Đọc state hiện tại và matrix/case liên quan.
-2. Viết hoặc cập nhật test oracle trước khi sửa logic parity.
-3. Thay đổi nhỏ, tách core simulation khỏi presentation.
-4. Build Editor/Development, chạy test phù hợp và PIE smoke test.
-5. Cập nhật `docs/27_IMPLEMENTATION_STATUS.md` và parity matrix.
-6. Commit nhỏ, mô tả đúng trạng thái; không gọi incomplete là complete.
+1. Đọc status và capability liên quan.
+2. Nêu canonical state, command/result và test trước khi sửa.
+3. Thay đổi nhỏ; ưu tiên một resolver/cue framework dùng lại.
+4. Build, automation, PIE/Standalone đúng mức rủi ro trên Windows.
+5. Cập nhật `docs/05_EXPERIENCE_CAPABILITY_MATRIX.md`, `docs/26_DECISION_LOG.md` và `docs/27_IMPLEMENTATION_STATUS.md` bằng sự thật có evidence.
+6. Commit nhỏ, không gọi source-only là runtime complete.
 
-## Definition of done một feature
+## Definition of done một capability
 
-- Có stable ID và content/data validation.
-- Có hành vi audit được hoặc được đánh dấu rõ `UNKNOWN`.
+- Có stable ID, schema và validator.
+- Kết quả deterministic, save/load không reroll hoặc commit hai lần.
+- Presentation có thể lỗi/skip mà state vẫn đúng.
 - Có automated test hoặc manual test card.
-- Save/load và deterministic replay được xét nếu feature thay đổi state.
-- Presentation 3D không thay đổi simulation result.
-- UI tiếng Việt, accessibility cơ bản và lỗi trạng thái được xử lý.
+- UI tiếng Việt đơn giản; không hard-code player text trong C++/Blueprint logic.
+- Nếu có 3D/UI/VFX: có PIE/Standalone evidence và performance capture phù hợp.

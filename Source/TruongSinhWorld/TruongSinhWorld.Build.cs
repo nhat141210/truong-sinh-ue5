@@ -10,10 +10,7 @@ public class TruongSinhWorld : ModuleRules
             "Core",
             "CoreUObject",
             "Engine",
-            "TruongSinhCore",
-            "TruongSinhData",
-            "TruongSinhSimulation",
-            "TruongSinhQuest"
+            "TruongSinhCore"
         });
     }
 }

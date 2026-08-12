@@ -1,41 +1,38 @@
 # Trường Sinh Tiên giới
 
-Foundation cho game tu tiên Windows dùng Unreal Engine 5.8: trình bày open-zone 3D góc nhìn thứ ba, simulation/data-driven và chiến đấu theo lượt được biểu diễn trong đấu trường 3D.
+Sandbox-life simulation tu tiên Windows dùng Unreal Engine 5.8. Người chơi trực tiếp khám phá một thế giới phương Đông 3D, chuẩn bị công pháp/tài nguyên và sống qua hàng trăm năm; tu luyện, đấu pháp, luyện đan và bố trận được simulation tự giải quyết rồi UE5 trình diễn bằng animation, Niagara, camera và âm thanh.
 
-
+Không có action combat, multiplayer, runtime LLM hoặc ending bắt buộc. Một save theo một nguyên thần qua nhiều thân xác; tu sĩ đủ mạnh có thể liên tục tăng tuổi thọ, còn đoạt xá là lựa chọn dự phòng.
 
 ## Trạng thái
 
-Hiện tại là M0/M1 bootstrap: tài liệu handoff, scripts Windows, manifest donor và C++ skeleton có thể mở rộng. Chưa có project UE được build trên VPS; Unreal Engine phải được cài và kiểm tra trên Windows.
+Repo đang ở product reset M0/M1. Có C++ foundation deterministic và Windows scripts; chưa có bằng chứng UHT/UBT, map, PIE, VFX hoặc benchmark vì VPS không cài Unreal Engine.
 
 ## Bắt đầu trên Windows
 
 ```powershell
-git clone <REMOTE-CUA-BAN> D:\GameDev\truong-sinh-ue5
-cd D:\GameDev\truong-sinh-ue5
+git clone git@github.com:nhat141210/truong-sinh-ue5.git D:\GameDev\truong-sinh-ue5
+Set-Location D:\GameDev\truong-sinh-ue5
+git lfs install
 .\tools\verify-windows-environment.ps1
 .\tools\build-windows.ps1
+.\tools\run-tests.ps1
 ```
 
-Trước hết, đưa agent Windows đọc toàn bộ
-[WINDOWS_AGENT_HANDOFF.md](docs/WINDOWS_AGENT_HANDOFF.md), sau đó đọc theo thứ tự
-trong `AGENTS.md`. Chỉ clone donor cần thiết sau native build M1; donor không thuộc
-đường boot đầu.
+Trước khi sửa, đọc toàn bộ `docs/WINDOWS_AGENT_HANDOFF.md`, rồi đọc đúng thứ tự trong `AGENTS.md`.
 
-Repo bootstrap phải có commit/remote thật trước khi chuyển máy. Nếu `git log -1`
-không có kết quả, dừng: chưa có baseline để Windows clone hoặc MCP checkpoint.
+## Trụ cột
+
+- **Sống trong thế giới:** ít zone nhưng cảnh quan, thời tiết, NPC và động phủ có phản hồi rõ.
+- **Chuẩn bị thay cho thao tác:** mọi activity dùng `Plan → Resolve → Commit → Present`.
+- **Thời gian có ý nghĩa:** cảnh giới, công pháp, đan dược và tài nguyên thay đổi tuổi thọ.
+- **Một nguyên thần, nhiều đời:** đoạt xá giữ tri thức nhưng đổi thân xác và thân phận.
+- **Đẹp trong budget:** 1080p High hướng tới 60 FPS trên i5-12400F + RTX 3060; không Hardware Ray Tracing.
 
 ## Cấu trúc
 
-- `docs/`: nguồn sự thật cho design, parity, kiến trúc, workflow và trạng thái.
-- `Source/`: C++ core/simulation; Blueprint chỉ dùng như adapter hoặc presentation.
-- `Content/`: asset và Data Asset gốc của dự án, không chứa material từ reference audit.
-- `_external/`: donor clone cục bộ, do script tạo và bị Git ignore.
-- `ReferenceVault/`: audit cục bộ của bản Steam tham chiếu, bị Git ignore.
-
-## Nguyên tắc quyết định
-
-- Parity là kết quả hành vi được đo, không phải sao chép asset hoặc text.
-- Một codebase duy nhất: simulation được giữ nguyên khi presentation 3D nâng cấp.
-- Golden loop canonical phải chạy trước; sau đó khóa visual target corridor trước
-  khi mở rộng hàng loạt zone/content.
+- `docs/`: design, capability, kiến trúc, art, performance và status.
+- `Source/`: canonical C++ simulation/resolution/save; presentation là consumer.
+- `Content/`: asset gốc của dự án, bắt buộc có provenance.
+- `_external/`: donor local, bị ignore và không thuộc đường boot đầu.
+- `ReferenceVault/`: nghiên cứu local, không commit.

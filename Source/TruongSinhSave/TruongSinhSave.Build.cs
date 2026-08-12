@@ -9,12 +9,8 @@ public class TruongSinhSave : ModuleRules
         {
             "Core",
             "CoreUObject",
-            "Engine",
             "TruongSinhCore",
-            "TruongSinhData",
-            "TruongSinhSimulation",
-            "TruongSinhCombat",
-            "TruongSinhQuest"
+            "TruongSinhSimulation"
         });
         PrivateDependencyModuleNames.AddRange(new string[] { "Json", "JsonUtilities" });
     }

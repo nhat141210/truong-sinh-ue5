@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/TruongSinhTypes.h"
-#include "Combat/TruongSinhCombatSimulation.h"
+#include "Resolution/TruongSinhActivityResolution.h"
 #include "UObject/Interface.h"
 #include "TruongSinhWorldPresentation.generated.h"
 
@@ -43,5 +43,5 @@ public:
     void PresentActionResult(const FTruongSinhActionResult& Result);
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Truong Sinh|Presentation")
-    void PresentCombatReplay(const FTruongSinhCombatResult& Result);
+    void PresentActivityReplay(const FTruongSinhAutoResolutionResult& Result);
 };

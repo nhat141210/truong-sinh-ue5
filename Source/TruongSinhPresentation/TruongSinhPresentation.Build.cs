@@ -11,7 +11,7 @@ public class TruongSinhPresentation : ModuleRules
             "CoreUObject",
             "Engine",
             "TruongSinhCore",
-            "TruongSinhCombat"
+            "TruongSinhResolution"
         });
     }
 }

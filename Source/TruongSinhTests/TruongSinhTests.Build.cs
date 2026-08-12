@@ -11,13 +11,8 @@ public class TruongSinhTests : ModuleRules
             "CoreUObject",
             "Engine",
             "TruongSinhCore",
-            "TruongSinhData",
             "TruongSinhSimulation",
-            "TruongSinhCombat",
-            "TruongSinhQuest",
-            "TruongSinhWorld",
-            "TruongSinhPresentation",
-            "TruongSinhUI",
+            "TruongSinhResolution",
             "TruongSinhSave"
         });
     }

@@ -15,7 +15,7 @@
       "LoadingPhase": "Default"
     },
     {
-      "Name": "TruongSinhCombat",
+      "Name": "TruongSinhResolution",
       "Type": "Runtime",
       "LoadingPhase": "Default"
     },
@@ -25,7 +25,7 @@
       "LoadingPhase": "Default"
     },
     {
-      "Name": "TruongSinhQuest",
+      "Name": "TruongSinhNarrative",
       "Type": "Runtime",
       "LoadingPhase": "Default"
     },
@@ -67,18 +67,6 @@
     },
     {
       "Name": "CommonUI",
-      "Enabled": true
-    },
-    {
-      "Name": "GameplayAbilities",
-      "Enabled": true
-    },
-    {
-      "Name": "PCG",
-      "Enabled": true
-    },
-    {
-      "Name": "StateTree",
       "Enabled": true
     },
     {

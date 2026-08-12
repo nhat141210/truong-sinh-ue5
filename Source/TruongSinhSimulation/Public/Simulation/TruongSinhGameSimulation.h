@@ -2,13 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/TruongSinhTypes.h"
+#include "Simulation/TruongSinhLifeState.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "TruongSinhGameSimulation.generated.h"
 
 /**
- * M1-only internal payload proving canonical time commits. Player-facing actions
- * must translate audited data into this payload; UI and world actors must not
- * invent their own time cost.
+ * Canonical time payload. Exploration adapters submit fixed quanta; activities
+ * submit their resolved duration. Simulation never reads per-frame timing.
  */
 USTRUCT(BlueprintType)
 struct TRUONGSINHSIMULATION_API FTruongSinhAdvanceTimePayload : public FTruongSinhActionPayload
@@ -16,7 +16,7 @@ struct TRUONGSINHSIMULATION_API FTruongSinhAdvanceTimePayload : public FTruongSi
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "1"))
-    int32 DayCount = 1;
+    int64 Minutes = 1;
 };
 
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
@@ -26,11 +26,24 @@ struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
     GENERATED_BODY()
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
-    int32 SchemaVersion = 1;
+    int32 SchemaVersion = 2;
 
-    /** Absolute action-time counter. Calendar conversion remains audit-gated. */
+    /** Absolute canonical time. One authored day is 1,440 minutes. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
-    int64 ElapsedDays = 0;
+    int64 ElapsedMinutes = 0;
+
+    /** Real-time adapter remainder; game shutdown never adds to it. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int64 ExplorationRemainderMillis = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId WorldLayerId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhSoulState Soul;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhVesselState CurrentVessel;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     int64 WorldRevision = 0;

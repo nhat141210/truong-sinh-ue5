@@ -22,25 +22,6 @@
       "engineGate": "Reference behavior and architecture only. The pinned license is non-commercial; do not import code or data without a separately documented permission and compatibility decision."
     },
     {
-      "id": "simplequest",
-      "url": "https://github.com/TheGeebus/SimpleQuest.git",
-      "commit": "882be0eaca9251e787707c03ce53669ab54a81d6",
-      "clonePath": "_external/simplequest",
-      "mode": "compatibility-candidate",
-      "purpose": ["quest-graph", "progression"],
-      "engineGate": "Plugin manifest targets UE 5.6; compile on an isolated UE 5.8 branch before adoption."
-    },
-    {
-      "id": "soulgame",
-      "url": "https://github.com/X4V13R95/SoulGame.git",
-      "commit": "aed0f39cad83123d73e9b70f97aa4bd259f28151",
-      "clonePath": "_external/soulgame",
-      "mode": "future-3d-reference",
-      "optional": true,
-      "purpose": ["gas-integration", "motion-matching", "traversal", "common-ui"],
-      "engineGate": "Do not import into parity core without an isolated UE 5.8 test."
-    },
-    {
       "id": "monolith",
       "url": "https://github.com/tumourlove/monolith.git",
       "commit": "e67544caa9e11569e87c1a4f616568544822d8b6",

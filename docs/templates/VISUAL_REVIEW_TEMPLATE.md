@@ -27,7 +27,7 @@
 | Lumen GI/reflection ổn định | | |
 | Material/texture scale nhất quán | | |
 | Nanite/LOD/foliage không pop gây chú ý | | |
-| VFX ngũ hành rõ nhưng không che combat UI | | |
+| VFX ngũ hành rõ nhưng không che result/activity UI | | |
 | NPC/animation không vượt animation budget | | |
 | UI dễ đọc, Vietnamese string không tràn | | |
 | World state khớp simulation snapshot | | |

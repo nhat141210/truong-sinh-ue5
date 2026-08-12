@@ -2,7 +2,7 @@
 
 ## Phạm vi máy
 
-Toàn bộ UE5.8, asset, reference audit, profiling, package và QA thực hiện trên máy Windows. VPS hiện chỉ phục vụ Ca Đêm chạy web; không clone donor, không cài Unreal, không tạo asset/video, không benchmark hay package game UE trên VPS.
+Toàn bộ UE5.8, asset, design research, profiling, package và QA thực hiện trên máy Windows. VPS chỉ chuẩn bị source/docs/static checks; không cài Unreal, tạo asset/video, benchmark hay package game UE.
 
 Workstation hiện tại cần tối thiểu: i5-12400F, RTX 3060, Windows 10/11 x64 và ít nhất 250 GB trống. Lưu project trên SSD NVMe nếu có thể.
 
@@ -13,7 +13,7 @@ Workstation hiện tại cần tối thiểu: i5-12400F, RTX 3060, Windows 10/11
    Windows SDK, Unreal tools). Tài liệu UE5.8 hiện hành là nguồn version; UBT build
    là kiểm chứng cuối, không khóa cứng VS2022 theo hướng dẫn cũ.
 2. Qua Epic Launcher tải Game Animation Sample và package Fab/Quixel cần cho vertical slice. Không import mass asset ở bước này.
-3. Tạo D:\GameDev\ReferenceVault\ImmortalWayOfLife; không đặt vault trong Git.
+3. Chỉ tạo ReferenceVault ngoài Git khi một research task có ID cụ thể; không cần vault trong đường boot đầu.
 4. Clone repo:
 
     New-Item -ItemType Directory -Force D:\GameDev | Out-Null
@@ -25,14 +25,14 @@ Workstation hiện tại cần tối thiểu: i5-12400F, RTX 3060, Windows 10/11
 
     .\tools\verify-windows-environment.ps1
     .\tools\build-windows.ps1
-    .\tools\inventory-reference-game.ps1 -ReferenceGamePath <SteamGamePath> -VaultPath D:\GameDev\ReferenceVault\ImmortalWayOfLife
+    .\tools\run-tests.ps1
 
 Mỗi script phải fail rõ khi prerequisite thuộc phạm vi của nó thiếu: exact UE5.8,
 Visual Studio/SDK, Git LFS, dung lượng, path, test report hoặc donor commit khóa.
 Chúng không được tải asset proprietary vào repo.
 
-Không chạy `bootstrap-donors.ps1` trong đường boot đầu. Chỉ clone đúng donor cần
-đánh giá sau khi native M1 build/package pass; dùng switch optional khi thật sự cần.
+Không chạy `bootstrap-donors.ps1` hoặc inventory reference trong đường boot đầu.
+Chỉ clone đúng donor sau native M1 pass và khi task có acceptance rõ.
 
 ## Mở và build project
 
@@ -82,7 +82,7 @@ Trước package: build C++, Data Validation, automation test và standalone smo
 
 Release candidate luôn test trên Windows sạch không cài Unreal Engine/Epic
 Launcher. Game package không cần kết nối Epic khi chạy; chỉ dịch vụ được chủ động
-thêm sau này mới có network dependency. Trước M10 vẫn package Development định kỳ
+thêm sau này mới có network dependency. Trước release vẫn package Development định kỳ
 để phát hiện cook/module/asset reference lỗi sớm.
 
 ## Khi lỗi

@@ -16,8 +16,8 @@ public class TruongSinhUI : ModuleRules
             "TruongSinhCore",
             "TruongSinhData",
             "TruongSinhSimulation",
-            "TruongSinhCombat",
-            "TruongSinhQuest"
+            "TruongSinhResolution",
+            "TruongSinhNarrative"
         });
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
     }

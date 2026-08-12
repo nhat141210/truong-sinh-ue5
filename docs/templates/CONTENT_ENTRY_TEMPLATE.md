@@ -5,7 +5,7 @@
 | Trường | Giá trị |
 |---|---|
 | Stable ID | category_name_### |
-| Loại | NPC / item / technique / ability / recipe / sect / location / quest / event |
+| Loại | NPC / item / technique / activity / recipe / formation / sect / zone / event |
 | Display key | UI.Content... |
 | Version | |
 | Trạng thái | DRAFT / VALIDATED / IMPLEMENTED / TESTED / DEPRECATED |
@@ -26,7 +26,7 @@ Thay schema chi tiết bằng definition canonical trong 12_DATA_SCHEMAS.md khi 
 
 - Điều kiện nhận/sử dụng:
 - Thay đổi simulation:
-- Quan hệ với cảnh giới/ngũ hành/quest:
+- Quan hệ với cảnh giới/ngũ hành/event:
 - Điều kiện thất bại/không hợp lệ:
 - Save/migration impact:
 
@@ -41,13 +41,13 @@ Thay schema chi tiết bằng definition canonical trong 12_DATA_SCHEMAS.md khi 
 
 | Kiểm tra | ID/lệnh | Kết quả |
 |---|---|---|
-| ID/reference | | |
+| ID/dependency | | |
 | Data validator | | |
 | Simulation test | | |
 | Manual route | | |
 
-## Nguồn và audit
+## Nguồn và provenance
 
-- Audit/reference ID nếu có:
+- Research ID nếu có:
 - Asset manifest IDs:
 - Ghi chú thiết kế riêng:
