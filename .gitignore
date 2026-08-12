@@ -1,0 +1,52 @@
+# Unreal Engine generated files
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.idea/
+.vscode/
+*.sln
+*.suo
+*.user
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Rider / Visual Studio / Windows
+.idea/
+.vsconfig
+*.code-workspace
+Thumbs.db
+Desktop.ini
+
+# Local Unreal and agent state
+_external/
+ReferenceVault/
+.mcp.json
+.codex/
+.unreal-mcp/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+
+# Packaging output and crash artefacts
+Artifacts/
+Releases/
+CrashReportClient/
+*.dmp
+
+# Do not ignore source of truth
+!Config/
+!Content/
+!Source/
+!docs/
+!tools/

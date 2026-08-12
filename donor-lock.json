@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pinned, read-only donor references for Windows bootstrap. Import only after a dedicated compatibility and provenance review.",
+  "donors": [
+    {
+      "id": "alis",
+      "url": "https://github.com/fallintodusk/alis.git",
+      "commit": "02eb63bb32e0d3585e1b0e8f1cda8c320da30906",
+      "clonePath": "_external/alis",
+      "mode": "reference-and-selective-import",
+      "purpose": ["inventory", "save", "settings", "dialogue", "json-data-pipeline"],
+      "engineGate": "Verify project/plugin dependencies on UE 5.8 before import."
+    },
+    {
+      "id": "cultivation-world-simulator",
+      "url": "https://github.com/4thfever/cultivation-world-simulator.git",
+      "commit": "b87a8c81f2d399374157033ae9de69b72fc9253e",
+      "clonePath": "_external/cultivation-world-simulator",
+      "mode": "sparse-reference-only",
+      "sparsePaths": ["src/classes", "src/config", "src/sim", "src/systems", "tests", "docs/specs"],
+      "purpose": ["cultivation-domain-model", "npc-simulation", "sects", "lifespan", "world-rules"],
+      "engineGate": "Reference behavior and architecture only. The pinned license is non-commercial; do not import code or data without a separately documented permission and compatibility decision."
+    },
+    {
+      "id": "simplequest",
+      "url": "https://github.com/TheGeebus/SimpleQuest.git",
+      "commit": "882be0eaca9251e787707c03ce53669ab54a81d6",
+      "clonePath": "_external/simplequest",
+      "mode": "compatibility-candidate",
+      "purpose": ["quest-graph", "progression"],
+      "engineGate": "Plugin manifest targets UE 5.6; compile on an isolated UE 5.8 branch before adoption."
+    },
+    {
+      "id": "soulgame",
+      "url": "https://github.com/X4V13R95/SoulGame.git",
+      "commit": "aed0f39cad83123d73e9b70f97aa4bd259f28151",
+      "clonePath": "_external/soulgame",
+      "mode": "future-3d-reference",
+      "optional": true,
+      "purpose": ["gas-integration", "motion-matching", "traversal", "common-ui"],
+      "engineGate": "Do not import into parity core without an isolated UE 5.8 test."
+    },
+    {
+      "id": "monolith",
+      "url": "https://github.com/tumourlove/monolith.git",
+      "commit": "e67544caa9e11569e87c1a4f616568544822d8b6",
+      "clonePath": "_external/monolith",
+      "mode": "optional-editor-tooling",
+      "optional": true,
+      "purpose": ["mcp-editor-automation"],
+      "engineGate": "Use only after native UE 5.8 MCP has been smoke tested; bind editor services locally."
+    }
+  ]
+}
