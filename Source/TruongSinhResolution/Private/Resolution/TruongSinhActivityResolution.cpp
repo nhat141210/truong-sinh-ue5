@@ -20,6 +20,23 @@ constexpr TCHAR BeatResult[] = TEXT("activity.beat.result");
 constexpr TCHAR CueApproach[] = TEXT("cue.activity.approach.default");
 constexpr TCHAR CueResolve[] = TEXT("cue.activity.resolve.default");
 constexpr TCHAR CueResult[] = TEXT("cue.activity.result.default");
+
+const TCHAR* ActivityPrefix(const ETruongSinhActivityType Type)
+{
+    switch (Type)
+    {
+    case ETruongSinhActivityType::Breakthrough:
+        return TEXT("breakthrough");
+    case ETruongSinhActivityType::Alchemy:
+        return TEXT("alchemy");
+    case ETruongSinhActivityType::Formation:
+        return TEXT("formation");
+    case ETruongSinhActivityType::Conflict:
+        return TEXT("conflict");
+    default:
+        return TEXT("cultivation");
+    }
+}
 }
 
 namespace
@@ -162,26 +179,49 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
         Result.Outcome = ETruongSinhResolutionOutcome::Failure;
     }
 
-    switch (Result.Outcome)
+    switch (Plan.Type)
     {
-    case ETruongSinhResolutionOutcome::GreatSuccess:
-        Result.CultivationProgressUnits = 1200;
-        Result.OutcomeId.Value = TEXT("cultivation.outcome.great_success");
-        break;
-    case ETruongSinhResolutionOutcome::Success:
-        Result.CultivationProgressUnits = 800;
-        Result.OutcomeId.Value = TEXT("cultivation.outcome.success");
-        break;
-    case ETruongSinhResolutionOutcome::PartialSuccess:
-        Result.CultivationProgressUnits = 350;
-        Result.OutcomeId.Value = TEXT("cultivation.outcome.partial_success");
+    case ETruongSinhActivityType::Breakthrough:
+        switch (Result.Outcome)
+        {
+        case ETruongSinhResolutionOutcome::GreatSuccess:
+            Result.RealmLifespanBonusDays = 20 * 365;
+            Result.NewRealmId.Value = TEXT("realm.foundation");
+            break;
+        case ETruongSinhResolutionOutcome::Success:
+            Result.RealmLifespanBonusDays = 10 * 365;
+            Result.NewRealmId.Value = TEXT("realm.foundation");
+            break;
+        case ETruongSinhResolutionOutcome::PartialSuccess:
+            Result.CultivationProgressUnits = 250;
+            break;
+        default:
+            break;
+        }
         break;
     default:
-        Result.CultivationProgressUnits = 0;
-        Result.OutcomeId.Value = TEXT("cultivation.outcome.failure");
+        switch (Result.Outcome)
+        {
+        case ETruongSinhResolutionOutcome::GreatSuccess:
+            Result.CultivationProgressUnits = 1200;
+            break;
+        case ETruongSinhResolutionOutcome::Success:
+            Result.CultivationProgressUnits = 800;
+            break;
+        case ETruongSinhResolutionOutcome::PartialSuccess:
+            Result.CultivationProgressUnits = 350;
+            break;
+        default:
+            break;
+        }
         break;
     }
-    Result.ReplayId.Value = FString::Printf(TEXT("replay.cultivation.%s"),
+    const TCHAR* Prefix = TruongSinhResolutionIds::ActivityPrefix(Plan.Type);
+    const TCHAR* Outcome = Result.Outcome == ETruongSinhResolutionOutcome::GreatSuccess ? TEXT("great_success") :
+        Result.Outcome == ETruongSinhResolutionOutcome::Success ? TEXT("success") :
+        Result.Outcome == ETruongSinhResolutionOutcome::PartialSuccess ? TEXT("partial_success") : TEXT("failure");
+    Result.OutcomeId.Value = FString::Printf(TEXT("%s.outcome.%s"), Prefix, Outcome);
+    Result.ReplayId.Value = FString::Printf(TEXT("replay.%s.%s"), Prefix,
         *Plan.Action.CommandId.ToString(EGuidFormats::Digits).ToLower());
 
     AddBeat(Result.Beats, 0, TruongSinhResolutionIds::BeatApproach,

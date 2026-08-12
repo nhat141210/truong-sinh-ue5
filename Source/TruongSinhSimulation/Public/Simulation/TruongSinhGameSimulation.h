@@ -38,6 +38,44 @@ struct TRUONGSINHSIMULATION_API FTruongSinhCultivationCommitPayload : public FTr
     FTruongSinhStableId ReplayId;
 };
 
+/**
+ * Generic resolved-activity delta. Resolution owns all outcome values; this
+ * payload is the narrow, typed hand-off that simulation validates and commits.
+ * It deliberately does not reference UWorld, actors, UI, or resolver types.
+ */
+USTRUCT(BlueprintType)
+struct TRUONGSINHSIMULATION_API FTruongSinhResolvedActivityCommitPayload : public FTruongSinhActionPayload
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ActivityId;
+
+    /** Canonical state precondition; prevents a resolved activity from being applied to a different realm. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId RequiredCurrentRealmId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "1"))
+    int64 Minutes = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 CultivationProgressUnits = 0;
+
+    /** Applied to the realm contribution only after a successful resolved breakthrough. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 RealmLifespanBonusDays = 0;
+
+    /** Empty means the vessel keeps its current realm. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId NewRealmId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OutcomeId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ReplayId;
+};
+
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
 USTRUCT(BlueprintType)
 struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
@@ -81,6 +119,7 @@ class TRUONGSINHSIMULATION_API FTruongSinhGameSimulation
 public:
     static const TCHAR* AdvanceTimeActionId;
     static const TCHAR* CommitCultivationActionId;
+    static const TCHAR* CommitResolvedActivityActionId;
 
     static FTruongSinhSimulationState CreateNewGame(int64 MasterSeed);
     static FTruongSinhActionResult Execute(

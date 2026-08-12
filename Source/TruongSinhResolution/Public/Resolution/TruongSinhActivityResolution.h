@@ -181,6 +181,14 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     int64 CultivationProgressUnits = 0;
 
+    /** Resolved breakthrough reward. Simulation applies this only through the typed commit payload. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int64 RealmLifespanBonusDays = 0;
+
+    /** Empty for activities that do not change realm. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId NewRealmId;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId OutcomeId;
 

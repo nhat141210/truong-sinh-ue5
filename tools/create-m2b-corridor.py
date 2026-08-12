@@ -204,6 +204,16 @@ def build_map():
     )
     cultivation_site.set_actor_scale3d(unreal.Vector(1.25, 1.25, 1.25))
 
+    breakthrough_site_class = unreal.load_class(
+        None, "/Script/TruongSinhUE5.TruongSinhBreakthroughSite"
+    )
+    if not breakthrough_site_class:
+        raise RuntimeError("Could not load native TruongSinhBreakthroughSite class")
+    breakthrough_site = spawn(
+        breakthrough_site_class, (4050, 0, 48), (0, 0, 0), "VT_BreakthroughSite"
+    )
+    breakthrough_site.set_actor_scale3d(unreal.Vector(1.25, 1.25, 1.25))
+
     for index, (x, y, scale) in enumerate(((820, -920, 0.85), (1450, 1030, 1.15), (2800, 1040, 0.95), (4200, -1010, 1.25), (4650, 970, 0.8))):
         tree(index, x, y, scale, mats)
     for index, x in enumerate((100, 1050, 2000, 2950, 3900, 4850)):

@@ -7,9 +7,11 @@ namespace TruongSinhSimulationIds
 {
 constexpr TCHAR EventTimeAdvanced[] = TEXT("core.time_advanced");
 constexpr TCHAR EventCultivationCommitted[] = TEXT("cultivation.committed");
+constexpr TCHAR EventResolvedActivityCommitted[] = TEXT("activity.committed");
 constexpr TCHAR ReasonDuplicateCommand[] = TEXT("core.reject.duplicate_command");
 constexpr TCHAR ReasonInvalidCommand[] = TEXT("core.reject.invalid_command");
 constexpr TCHAR ReasonInvalidPayload[] = TEXT("core.reject.invalid_payload");
+constexpr TCHAR ReasonActivityPrecondition[] = TEXT("activity.reject.precondition");
 constexpr TCHAR ReasonOverflow[] = TEXT("core.reject.overflow");
 constexpr TCHAR ReasonRevisionMismatch[] = TEXT("core.reject.revision_mismatch");
 constexpr TCHAR ReasonUnknownAction[] = TEXT("core.reject.unknown_action");
@@ -17,6 +19,7 @@ constexpr TCHAR ReasonUnknownAction[] = TEXT("core.reject.unknown_action");
 
 const TCHAR* FTruongSinhGameSimulation::AdvanceTimeActionId = TEXT("world.advance_time");
 const TCHAR* FTruongSinhGameSimulation::CommitCultivationActionId = TEXT("cultivation.commit_resolved");
+const TCHAR* FTruongSinhGameSimulation::CommitResolvedActivityActionId = TEXT("activity.commit_resolved");
 
 FTruongSinhSimulationState FTruongSinhGameSimulation::CreateNewGame(const int64 MasterSeed)
 {
@@ -51,21 +54,36 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     const FTruongSinhCultivationCommitPayload* CultivationPayload =
         Command.ActionId.Value == CommitCultivationActionId ?
             Command.Payload.GetPtr<FTruongSinhCultivationCommitPayload>() : nullptr;
-    if (!AdvancePayload && !CultivationPayload)
+    const FTruongSinhResolvedActivityCommitPayload* ActivityPayload =
+        Command.ActionId.Value == CommitResolvedActivityActionId ?
+            Command.Payload.GetPtr<FTruongSinhResolvedActivityCommitPayload>() : nullptr;
+    if (!AdvancePayload && !CultivationPayload && !ActivityPayload)
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonUnknownAction);
     }
 
-    const int64 Minutes = AdvancePayload ? AdvancePayload->Minutes : CultivationPayload->Minutes;
+    const int64 Minutes = AdvancePayload ? AdvancePayload->Minutes :
+        CultivationPayload ? CultivationPayload->Minutes : ActivityPayload->Minutes;
     if (Minutes <= 0 || (CultivationPayload &&
         (CultivationPayload->CultivationProgressUnits < 0 || !CultivationPayload->OutcomeId.IsValid() ||
-            !CultivationPayload->ReplayId.IsValid())))
+            !CultivationPayload->ReplayId.IsValid())) ||
+        (ActivityPayload && (!ActivityPayload->ActivityId.IsValid() || !ActivityPayload->RequiredCurrentRealmId.IsValid() ||
+            ActivityPayload->CultivationProgressUnits < 0 || ActivityPayload->RealmLifespanBonusDays < 0 ||
+            (!ActivityPayload->NewRealmId.Value.IsEmpty() && !ActivityPayload->NewRealmId.IsValid()) ||
+            !ActivityPayload->OutcomeId.IsValid() || !ActivityPayload->ReplayId.IsValid())))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
+    if (ActivityPayload && !(ActivityPayload->RequiredCurrentRealmId == InOutState.CurrentVessel.RealmId))
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonActivityPrecondition);
+    }
+    const int64 CultivationDelta = CultivationPayload ? CultivationPayload->CultivationProgressUnits :
+        ActivityPayload ? ActivityPayload->CultivationProgressUnits : 0;
+    const int64 RealmLifespanDelta = ActivityPayload ? ActivityPayload->RealmLifespanBonusDays : 0;
     if (InOutState.ElapsedMinutes > MAX_int64 - Minutes ||
-        (CultivationPayload && InOutState.CurrentVessel.CultivationUnits >
-            MAX_int64 - CultivationPayload->CultivationProgressUnits))
+        InOutState.CurrentVessel.CultivationUnits > MAX_int64 - CultivationDelta ||
+        InOutState.CurrentVessel.Lifespan.RealmBonusDays > MAX_int64 - RealmLifespanDelta)
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
     }
@@ -85,20 +103,30 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     }
     InOutState.ElapsedMinutes = NewElapsedMinutes;
     InOutState.CurrentVessel.Lifespan.BiologicalAgeDays += BiologicalDaysAdded;
-    if (CultivationPayload)
+    InOutState.CurrentVessel.CultivationUnits += CultivationDelta;
+    if (ActivityPayload)
     {
-        InOutState.CurrentVessel.CultivationUnits += CultivationPayload->CultivationProgressUnits;
+        InOutState.CurrentVessel.Lifespan.RealmBonusDays += RealmLifespanDelta;
+        if (ActivityPayload->NewRealmId.IsValid())
+        {
+            InOutState.CurrentVessel.RealmId = ActivityPayload->NewRealmId;
+        }
     }
     ++InOutState.WorldRevision;
     InOutState.CommittedCommandIds.Add(Command.CommandId);
 
     FTruongSinhDomainEvent Event;
     Event.EventTypeId.Value = CultivationPayload ? TruongSinhSimulationIds::EventCultivationCommitted :
+        ActivityPayload ? TruongSinhSimulationIds::EventResolvedActivityCommitted :
         TruongSinhSimulationIds::EventTimeAdvanced;
     Event.Sequence = 0;
     if (CultivationPayload)
     {
         Event.Payload.InitializeAs<FTruongSinhCultivationCommitPayload>(*CultivationPayload);
+    }
+    else if (ActivityPayload)
+    {
+        Event.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(*ActivityPayload);
     }
     else
     {

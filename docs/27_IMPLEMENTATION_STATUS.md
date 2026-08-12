@@ -21,6 +21,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 - Manny chính thức từ UE 5.8.1 Characters template đã hiển thị third-person với idle/jog/fall; runtime D3D screenshot xác nhận mesh/camera.
 - M2B có map riêng `/Game/Maps/VisualTarget/L_M2B_Corridor`: gate, corridor, water, ánh sáng/sương, caretaker tạm và cultivation site. Map qua structural validation, ResavePackages và được nạp bằng Development executable độc lập.
 - HUD native đã dùng frame ngọc/vàng có provenance rõ ràng; `realm.mortal` hiển thị là `PHÀM NHÂN` thay vì stable ID kỹ thuật.
+- M3 có lát cắt đột phá Trúc Cơ chạy qua chung pipeline activity: cần 800 tu vi, resolve deterministic, commit realm + thọ nguyên, autosave/pending replay và HUD result. Payload có precondition realm canonical nên không thể lặp lại để farm thọ nguyên.
 
 ## Chưa được gọi là hoàn thành cuối
 
@@ -37,7 +38,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 | M1 Windows native | COMPLETE (smoke evidence) | packaged build không thuộc M1 |
 | M2A Golden loop | IMPLEMENTED, RUNTIME SMOKE | cần manual interaction/Continue capture để đóng gate UX |
 | M2B Visual target | FOUNDATION VERIFIED | corridor loadable + temporary NPC/cultivation site + HUD frame; còn production art, activity cue, RTX3060 profile |
-| M3 Activity framework | SOURCE PROOF | registry/data/handlers/presentation runtime |
+| M3 Activity framework | SLICE PASS | cultivation + breakthrough dùng chung pipeline; còn registry Data Asset, alchemy, formation, conflict runtime |
 | M4 Living world | NOT STARTED | canonical NPC/event/social/economy |
 | M5 Lifespan/soul | SOURCE PROOF | gameplay content/UI/save migration |
 | M6 Demo | NOT STARTED | four zones và authored content |
@@ -46,4 +47,4 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 
 1. Mở PIE, đi bộ/nhìn/nhảy/pause và thực hiện một cultivation interaction bằng E.
 2. Đóng/mở Standalone, xác nhận Continue hiện summary và tu vi không cộng hai lần.
-3. Thay primitive/Manny tạm bằng environment, character, animation, audio/VFX có quyền sử dụng và qua visual/performance gate; không dùng corridor hiện tại làm hình ảnh final.
+3. Thêm registry Data Asset và các resolver alchemy/formation/conflict vào pipeline chung trước khi mở rộng world/NPC; đồng thời thay primitive/Manny tạm bằng art production đã duyệt.

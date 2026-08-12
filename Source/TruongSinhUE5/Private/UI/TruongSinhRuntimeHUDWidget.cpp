@@ -375,7 +375,11 @@ void UTruongSinhRuntimeHUDWidget::RefreshState()
     if (!State.CurrentVessel.RealmId.Value.IsEmpty())
     {
         const FString& RealmId = State.CurrentVessel.RealmId.Value;
-        if (RealmId != TEXT("realm.mortal"))
+        if (RealmId == TEXT("realm.foundation"))
+        {
+            Realm = TEXT("TRÚC CƠ");
+        }
+        else if (RealmId != TEXT("realm.mortal"))
         {
             Realm = RealmId.Replace(TEXT("realm."), TEXT("")).Replace(TEXT("_"), TEXT(" ")).ToUpper();
         }

@@ -19,6 +19,7 @@
 - [x] Standalone Editor đưa map/world lên play và khởi tạo sandbox.
 - [x] Development package portable cook/stage/archive và executable độc lập load smoke map sạch log.
 - [x] Manny visual foundation hiển thị third-person với idle/jog/fall trong packaged runtime.
+- [x] Breakthrough slice dùng shared activity pipeline, commit realm/lifespan deterministic và chặn repeat qua canonical precondition.
 - [ ] Manual PIE/Standalone input và Continue capture.
 
 ## Visual gate

@@ -27,6 +27,7 @@ for required_label in (
     "VT_VistaMountain_0",
     "VT_AncestorStone",
     "VT_CultivationSite",
+    "VT_BreakthroughSite",
     "VT_NPC_Caretaker_Temporary",
     "VT_Sun",
     "VT_SkyLight",

@@ -25,6 +25,11 @@ FString SavePath()
     return FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("SaveGames"), TEXT("TruongSinh_Autosave_v2.json"));
 }
 
+bool IsBreakthroughOffer(const FTruongSinhInteractionOffer& Offer)
+{
+    return Offer.CandidateId.Value == TEXT("facility.breakthrough.foundation");
+}
+
 FText OutcomeText(const ETruongSinhResolutionOutcome Outcome)
 {
     switch (Outcome)
@@ -99,7 +104,9 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
     FTruongSinhInteractionOffer Offer;
     const bool bHasOffer = FindBestInteraction(Provider, Offer);
     RuntimeHUD->SetInteractionPrompt(
-        bHasOffer ? NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ") : FText::GetEmpty(),
+        bHasOffer ? (IsBreakthroughOffer(Offer)
+            ? NSLOCTEXT("TruongSinh", "BreakthroughPrompt", "Đột phá Trúc Cơ")
+            : NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ")) : FText::GetEmpty(),
         bHasOffer);
 }
 
@@ -140,16 +147,43 @@ void ATruongSinhPlayerController::TryInteract()
     }
 
     const FTruongSinhSimulationState Before = Simulation->GetState();
+    const bool bBreakthrough = IsBreakthroughOffer(Offer);
+    if (bBreakthrough && Before.CurrentVessel.RealmId.Value != TEXT("realm.mortal"))
+    {
+        const FText Requirement = NSLOCTEXT(
+            "TruongSinh", "BreakthroughAlreadyCompleted", "Bạn đã vượt qua Trúc Cơ; cảnh giới kế tiếp chưa được mở trong bản này.");
+        if (RuntimeHUD)
+        {
+            RuntimeHUD->ShowActivityResult(
+                NSLOCTEXT("TruongSinh", "BreakthroughComplete", "ĐÃ VƯỢT QUA CẢNH GIỚI"), Requirement, false);
+        }
+        ClientMessage(Requirement.ToString());
+        return;
+    }
+    if (bBreakthrough && Before.CurrentVessel.CultivationUnits < 800)
+    {
+        const FText Requirement = NSLOCTEXT(
+            "TruongSinh", "BreakthroughRequirement", "Cần ít nhất 800 tu vi trước khi đột phá Trúc Cơ.");
+        if (RuntimeHUD)
+        {
+            RuntimeHUD->ShowActivityResult(
+                NSLOCTEXT("TruongSinh", "BreakthroughUnavailable", "CẢNH GIỚI CHƯA ĐỦ"), Requirement, false);
+        }
+        ClientMessage(Requirement.ToString());
+        return;
+    }
+
     FTruongSinhActivityPlan Plan;
     Plan.Action = ITruongSinhInteractionProvider::Execute_BuildInteractionCommand(
         Provider, Offer.CandidateId, Before.CurrentVessel.VesselId,
         Before.WorldRevision, Before.CommittedCommandIds.Num());
-    Plan.Type = ETruongSinhActivityType::Cultivation;
-    Plan.ActivityId.Value = TEXT("activity.cultivation.breathing_cycle");
+    Plan.Type = bBreakthrough ? ETruongSinhActivityType::Breakthrough : ETruongSinhActivityType::Cultivation;
+    Plan.ActivityId.Value = bBreakthrough ? TEXT("activity.breakthrough.foundation") :
+        TEXT("activity.cultivation.breathing_cycle");
     Plan.MethodId.Value = TEXT("method.five_elements_breathing");
     Plan.FacilityId = Offer.CandidateId;
     Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
-    Plan.DurationMinutes = 480;
+    Plan.DurationMinutes = bBreakthrough ? 720 : 480;
     Plan.Strategy = ETruongSinhActivityStrategy::Balanced;
 
     FTruongSinhActivitySnapshot Snapshot;
@@ -168,12 +202,28 @@ void ATruongSinhPlayerController::TryInteract()
     }
 
     const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
-    FTruongSinhCultivationCommitPayload CommitPayload;
-    CommitPayload.Minutes = Resolution.TimeAdvancedMinutes;
-    CommitPayload.CultivationProgressUnits = Resolution.CultivationProgressUnits;
-    CommitPayload.OutcomeId = Resolution.OutcomeId;
-    CommitPayload.ReplayId = Resolution.ReplayId;
-    Plan.Action.Payload.InitializeAs<FTruongSinhCultivationCommitPayload>(CommitPayload);
+    if (bBreakthrough)
+    {
+        FTruongSinhResolvedActivityCommitPayload CommitPayload;
+        CommitPayload.ActivityId = Plan.ActivityId;
+        CommitPayload.RequiredCurrentRealmId = Before.CurrentVessel.RealmId;
+        CommitPayload.Minutes = Resolution.TimeAdvancedMinutes;
+        CommitPayload.CultivationProgressUnits = Resolution.CultivationProgressUnits;
+        CommitPayload.RealmLifespanBonusDays = Resolution.RealmLifespanBonusDays;
+        CommitPayload.NewRealmId = Resolution.NewRealmId;
+        CommitPayload.OutcomeId = Resolution.OutcomeId;
+        CommitPayload.ReplayId = Resolution.ReplayId;
+        Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(CommitPayload);
+    }
+    else
+    {
+        FTruongSinhCultivationCommitPayload CommitPayload;
+        CommitPayload.Minutes = Resolution.TimeAdvancedMinutes;
+        CommitPayload.CultivationProgressUnits = Resolution.CultivationProgressUnits;
+        CommitPayload.OutcomeId = Resolution.OutcomeId;
+        CommitPayload.ReplayId = Resolution.ReplayId;
+        Plan.Action.Payload.InitializeAs<FTruongSinhCultivationCommitPayload>(CommitPayload);
+    }
     const FTruongSinhActionResult Commit = Simulation->Execute(Plan.Action);
     if (Commit.Status != ETruongSinhActionStatus::Committed)
     {
@@ -185,7 +235,14 @@ void ATruongSinhPlayerController::TryInteract()
     FString SaveError;
     const bool bSaved = SaveCanonicalState(SaveError);
     const FString SaveStatus = bSaved ? TEXT(" · Đã lưu") : FString::Printf(TEXT(" · Lỗi lưu: %s"), *SaveError);
-    const FString ResultDetails = FString::Printf(
+    const FString ResultDetails = bBreakthrough ? FString::Printf(
+        TEXT("Điểm %lld / %lld\nThọ nguyên +%lld ngày · Thời gian +%lld phút · Thiên đạo #%lld%s"),
+        static_cast<long long>(Resolution.FinalScore),
+        static_cast<long long>(Resolution.TargetScore),
+        static_cast<long long>(Resolution.RealmLifespanBonusDays),
+        static_cast<long long>(Resolution.TimeAdvancedMinutes),
+        static_cast<long long>(Commit.NewWorldRevision),
+        *SaveStatus) : FString::Printf(
         TEXT("Điểm %lld / %lld\nThời gian +%lld phút · Thiên đạo #%lld%s"),
         static_cast<long long>(Resolution.FinalScore),
         static_cast<long long>(Resolution.TargetScore),

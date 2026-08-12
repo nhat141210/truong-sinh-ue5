@@ -461,4 +461,82 @@ bool FTruongSinhCultivationCommitSpec::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhBreakthroughCommitSpec,
+    "TruongSinh.Activity.BreakthroughCommitAndLifespan",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhBreakthroughCommitSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(71, 72, 73, 74);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitResolvedActivityActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Action.Sequence = 0;
+    Plan.Type = ETruongSinhActivityType::Breakthrough;
+    Plan.ActivityId.Value = TEXT("activity.breakthrough.foundation");
+    Plan.MethodId.Value = TEXT("method.five_elements_breathing");
+    Plan.FacilityId.Value = TEXT("facility.breakthrough.dev_smoke");
+    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
+    Plan.DurationMinutes = 720;
+    Plan.Strategy = ETruongSinhActivityStrategy::Balanced;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 10000;
+    Snapshot.DifficultyOrTargetPower = 6500;
+    Snapshot.TechniqueModifierUnits = 350;
+    Snapshot.PreparationModifierUnits = 300;
+    Snapshot.EnvironmentModifierUnits = 450;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestEqual(TEXT("Breakthrough is a deterministic great success at a large score gap"),
+        Resolution.Outcome, ETruongSinhResolutionOutcome::GreatSuccess);
+    TestEqual(TEXT("Breakthrough emits the foundation realm"),
+        Resolution.NewRealmId.Value, FString(TEXT("realm.foundation")));
+    TestEqual(TEXT("Great breakthrough grants authored lifespan"),
+        Resolution.RealmLifespanBonusDays, 20ll * 365ll);
+
+    FTruongSinhResolvedActivityCommitPayload Payload;
+    Payload.ActivityId = Plan.ActivityId;
+    Payload.RequiredCurrentRealmId = State.CurrentVessel.RealmId;
+    Payload.Minutes = Resolution.TimeAdvancedMinutes;
+    Payload.CultivationProgressUnits = Resolution.CultivationProgressUnits;
+    Payload.RealmLifespanBonusDays = Resolution.RealmLifespanBonusDays;
+    Payload.NewRealmId = Resolution.NewRealmId;
+    Payload.OutcomeId = Resolution.OutcomeId;
+    Payload.ReplayId = Resolution.ReplayId;
+    Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
+
+    const int64 RemainingBefore = State.CurrentVessel.Lifespan.RemainingLifespanDays();
+    const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Resolved breakthrough commits through the generic activity gateway"),
+        Commit.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("Breakthrough changes canonical realm"),
+        State.CurrentVessel.RealmId.Value, FString(TEXT("realm.foundation")));
+    TestEqual(TEXT("Breakthrough retains its full realm lifespan contribution"),
+        State.CurrentVessel.Lifespan.RealmBonusDays, 20ll * 365ll);
+    TestEqual(TEXT("Breakthrough increases remaining lifespan by its authored bonus"),
+        State.CurrentVessel.Lifespan.RemainingLifespanDays(), RemainingBefore + 20ll * 365ll);
+    TestEqual(TEXT("Generic activity advances its exact planned time"), State.ElapsedMinutes, 720ll);
+
+    const FTruongSinhActionResult Duplicate = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Breakthrough retry cannot grant lifespan twice"),
+        Duplicate.Status, ETruongSinhActionStatus::Rejected);
+    TestEqual(TEXT("Duplicate leaves realm bonus unchanged"),
+        State.CurrentVessel.Lifespan.RealmBonusDays, 20ll * 365ll);
+
+    FTruongSinhActionCommand RepeatedBreakthrough = Plan.Action;
+    RepeatedBreakthrough.CommandId = FGuid(75, 76, 77, 78);
+    RepeatedBreakthrough.ExpectedWorldRevision = State.WorldRevision;
+    RepeatedBreakthrough.Sequence = State.CommittedCommandIds.Num();
+    const FTruongSinhActionResult Repeated = FTruongSinhGameSimulation::Execute(State, RepeatedBreakthrough);
+    TestEqual(TEXT("A later command cannot farm the same realm breakthrough"),
+        Repeated.Status, ETruongSinhActionStatus::Rejected);
+    TestEqual(TEXT("Repeated realm transition reports its canonical precondition"),
+        Repeated.ReasonId.Value, FString(TEXT("activity.reject.precondition")));
+    return true;
+}
+
 #endif
