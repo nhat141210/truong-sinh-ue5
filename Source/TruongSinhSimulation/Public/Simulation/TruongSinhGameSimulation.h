@@ -87,6 +87,15 @@ struct TRUONGSINHSIMULATION_API FTruongSinhResolvedActivityCommitPayload : publi
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0", ClampMax = "10000"))
     int32 OutputImpurityBps = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId FormationEffectId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0", ClampMax = "10000"))
+    int32 FormationIntegrityBps = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 FormationDurationMinutes = 0;
 };
 
 /** Persistent result of a committed recipe/activity output. Ordered by command GUID for save/hash determinism. */
@@ -112,6 +121,28 @@ struct TRUONGSINHSIMULATION_API FTruongSinhActivityOutputRecord
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     int32 ImpurityBps = 0;
+};
+
+/** Canonical installed formation. Expiration is expressed in game time, never wall-clock time. */
+USTRUCT(BlueprintType)
+struct TRUONGSINHSIMULATION_API FTruongSinhFormationState
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FGuid CommandId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId BlueprintId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId EffectId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int32 IntegrityBps = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int64 ExpiresAtMinute = 0;
 };
 
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
@@ -153,6 +184,9 @@ struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
     /** Canonical outputs from resolved activities; presentation never owns this inventory evidence. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     TArray<FTruongSinhActivityOutputRecord> ActivityOutputRecords;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    TArray<FTruongSinhFormationState> Formations;
 };
 
 /** Pure deterministic transition engine. It never reads world, frame timing or presentation state. */

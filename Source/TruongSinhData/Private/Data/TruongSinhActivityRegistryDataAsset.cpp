@@ -40,6 +40,13 @@ bool UTruongSinhActivityRegistryDataAsset::ValidateRegistry(FString& OutError) c
             OutError = TEXT("Alchemy output definition is incomplete or unexpected");
             return false;
         }
+        if ((Definition.ResolverId == TEXT("formation")) != Definition.FormationEffectId.IsValid() ||
+            (Definition.FormationEffectId.IsValid() && Definition.FormationDurationMinutes <= 0) ||
+            (!Definition.FormationEffectId.IsValid() && Definition.FormationDurationMinutes != 0))
+        {
+            OutError = TEXT("Formation effect definition is incomplete or unexpected");
+            return false;
+        }
         if (FacilityIds.Contains(Definition.FacilityId.Value) || ActivityIds.Contains(Definition.ActivityId.Value))
         {
             OutError = TEXT("Activity registry contains a duplicate facility or activity ID");

@@ -9,14 +9,15 @@ if not registry:
     raise RuntimeError(f"Missing {ASSET_PATH}")
 
 definitions = registry.get_editor_property("definitions")
-if len(definitions) != 3:
-    raise RuntimeError(f"Expected exactly three authored M3 definitions, got {len(definitions)}")
+if len(definitions) != 4:
+    raise RuntimeError(f"Expected exactly four authored M3 definitions, got {len(definitions)}")
 
 by_facility = {entry.get_editor_property("facility_id").get_editor_property("value"): entry for entry in definitions}
 for facility, resolver, duration in (
     ("facility.cultivation.dev_smoke", "cultivation", 480),
     ("facility.breakthrough.foundation", "breakthrough", 720),
     ("facility.alchemy.qingxin", "alchemy", 360),
+    ("facility.formation.spirit_gathering", "formation", 240),
 ):
     entry = by_facility.get(facility)
     if not entry:
@@ -32,6 +33,12 @@ if alchemy.get_editor_property("output_id").get_editor_property("value") != "pil
 if alchemy.get_editor_property("maximum_output_units") != 3:
     raise RuntimeError("Alchemy maximum output is wrong")
 
+formation = by_facility["facility.formation.spirit_gathering"]
+if formation.get_editor_property("formation_effect_id").get_editor_property("value") != "effect.formation.spirit_gathering":
+    raise RuntimeError("Formation effect ID is missing")
+if formation.get_editor_property("formation_duration_minutes") != 10080:
+    raise RuntimeError("Formation duration is wrong")
+
 activity_ids = set()
 for entry in definitions:
     activity_id = entry.get_editor_property("activity_id").get_editor_property("value")
@@ -44,4 +51,4 @@ for entry in definitions:
         raise RuntimeError(f"Duplicate activity ID: {activity_id}")
     activity_ids.add(activity_id)
 
-unreal.log("Activity registry validation PASS: definitions=3, resolvers=cultivation,breakthrough,alchemy")
+unreal.log("Activity registry validation PASS: definitions=4, resolvers=cultivation,breakthrough,alchemy,formation")

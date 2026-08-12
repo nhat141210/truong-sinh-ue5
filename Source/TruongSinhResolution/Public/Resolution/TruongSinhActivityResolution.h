@@ -88,6 +88,12 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhActivityPlan
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
     int64 MaximumOutputUnits = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId FormationEffectId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
+    int64 FormationDurationMinutes = 0;
 };
 
 /** Immutable canonical values supplied by simulation. Every score uses the same fixed-point units. */
@@ -208,6 +214,15 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     int32 OutputImpurityBps = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId FormationEffectId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int32 FormationIntegrityBps = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int64 FormationDurationMinutes = 0;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId OutcomeId;

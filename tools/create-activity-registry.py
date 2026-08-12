@@ -18,7 +18,8 @@ def stable_id(value):
 
 
 def definition(activity_id, facility_id, resolver_id, duration, minimum, difficulty,
-               technique, preparation, environment, output_id="", maximum_output=0):
+               technique, preparation, environment, output_id="", maximum_output=0,
+               formation_effect_id="", formation_duration=0):
     result = unreal.TruongSinhActivityDefinition()
     result.set_editor_property("activity_id", stable_id(activity_id))
     result.set_editor_property("facility_id", stable_id(facility_id))
@@ -34,6 +35,9 @@ def definition(activity_id, facility_id, resolver_id, duration, minimum, difficu
     if output_id:
         result.set_editor_property("output_id", stable_id(output_id))
         result.set_editor_property("maximum_output_units", maximum_output)
+    if formation_effect_id:
+        result.set_editor_property("formation_effect_id", stable_id(formation_effect_id))
+        result.set_editor_property("formation_duration_minutes", formation_duration)
     return result
 
 
@@ -89,6 +93,19 @@ registry.set_editor_property("definitions", [
         300,
         "pill.qingxin",
         3,
+    ),
+    definition(
+        "activity.formation.spirit_gathering",
+        "facility.formation.spirit_gathering",
+        "formation",
+        240,
+        350,
+        6400,
+        350,
+        500,
+        400,
+        formation_effect_id="effect.formation.spirit_gathering",
+        formation_duration=10080,
     ),
 ])
 

@@ -650,4 +650,78 @@ bool FTruongSinhAlchemyOutputSpec::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhFormationStateSpec,
+    "TruongSinh.Activity.FormationStateAndExpiry",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhFormationStateSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(91, 92, 93, 94);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitResolvedActivityActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Type = ETruongSinhActivityType::Formation;
+    Plan.ActivityId.Value = TEXT("activity.formation.spirit_gathering");
+    Plan.MethodId.Value = TEXT("method.five_elements_breathing");
+    Plan.FacilityId.Value = TEXT("facility.formation.spirit_gathering");
+    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
+    Plan.DurationMinutes = 240;
+    Plan.FormationEffectId.Value = TEXT("effect.formation.spirit_gathering");
+    Plan.FormationDurationMinutes = 10080;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 10000;
+    Snapshot.DifficultyOrTargetPower = 6400;
+    Snapshot.TechniqueModifierUnits = 350;
+    Snapshot.PreparationModifierUnits = 500;
+    Snapshot.EnvironmentModifierUnits = 400;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestEqual(TEXT("Formation resolves as great success at the authored gap"),
+        Resolution.Outcome, ETruongSinhResolutionOutcome::GreatSuccess);
+    TestEqual(TEXT("Formation emits its authored effect"), Resolution.FormationEffectId.Value,
+        FString(TEXT("effect.formation.spirit_gathering")));
+    TestEqual(TEXT("Great formation starts at full integrity"), Resolution.FormationIntegrityBps, 10000);
+    TestEqual(TEXT("Formation uses authored lifetime"), Resolution.FormationDurationMinutes, 10080ll);
+
+    FTruongSinhResolvedActivityCommitPayload Payload;
+    Payload.ActivityId = Plan.ActivityId;
+    Payload.RequiredCurrentRealmId = State.CurrentVessel.RealmId;
+    Payload.Minutes = Resolution.TimeAdvancedMinutes;
+    Payload.OutcomeId = Resolution.OutcomeId;
+    Payload.ReplayId = Resolution.ReplayId;
+    Payload.FormationEffectId = Resolution.FormationEffectId;
+    Payload.FormationIntegrityBps = Resolution.FormationIntegrityBps;
+    Payload.FormationDurationMinutes = Resolution.FormationDurationMinutes;
+    Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
+    const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Formation commits through the shared gateway"), Commit.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("One canonical formation is installed"), State.Formations.Num(), 1);
+    if (State.Formations.Num() == 1)
+    {
+        TestEqual(TEXT("Expiration includes construction time plus authored duration"),
+            State.Formations[0].ExpiresAtMinute, 10320ll);
+    }
+
+    FTruongSinhSaveGameV2 Save;
+    Save.Simulation = State;
+    Save.PayloadHash = FTruongSinhGameSimulation::ComputeStateHash(State);
+    FString Json;
+    FString Error;
+    TestTrue(TEXT("Formation state serializes"), FTruongSinhSaveJsonCodecV2::Serialize(Save, Json, Error));
+    FTruongSinhSaveGameV2 Loaded;
+    TestTrue(TEXT("Formation state restores"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
+    TestEqual(TEXT("Save retains installed formation"), Loaded.Simulation.Formations.Num(), 1);
+
+    const FTruongSinhActionCommand Expire = MakeAdvanceTimeCommand(
+        FGuid(95, 96, 97, 98), State.WorldRevision, 10080);
+    const FTruongSinhActionResult ExpireResult = FTruongSinhGameSimulation::Execute(State, Expire);
+    TestEqual(TEXT("Canonical time advance commits"), ExpireResult.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("Formation expires at its canonical game-time boundary"), State.Formations.Num(), 0);
+    return true;
+}
+
 #endif

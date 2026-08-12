@@ -52,6 +52,13 @@ struct TRUONGSINHDATA_API FTruongSinhActivityDefinition
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
     int64 MaximumOutputUnits = 0;
+
+    /** Optional canonical formation effect. Empty for non-formation activities. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId FormationEffectId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
+    int64 FormationDurationMinutes = 0;
 };
 
 /**

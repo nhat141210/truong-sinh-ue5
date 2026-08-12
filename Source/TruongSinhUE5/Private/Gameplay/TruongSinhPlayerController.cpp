@@ -49,6 +49,11 @@ bool TryGetActivityType(const FTruongSinhActivityDefinition& Definition, ETruong
         OutType = ETruongSinhActivityType::Alchemy;
         return true;
     }
+    if (Definition.ResolverId == TEXT("formation"))
+    {
+        OutType = ETruongSinhActivityType::Formation;
+        return true;
+    }
     return false;
 }
 
@@ -160,6 +165,8 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
             ? NSLOCTEXT("TruongSinh", "BreakthroughPrompt", "Đột phá Trúc Cơ")
             : Definition->ResolverId == TEXT("alchemy")
                 ? NSLOCTEXT("TruongSinh", "AlchemyPrompt", "Luyện đan Thanh Tâm")
+            : Definition->ResolverId == TEXT("formation")
+                ? NSLOCTEXT("TruongSinh", "FormationPrompt", "Dựng Tụ Linh Trận")
             : NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ")) : FText::GetEmpty(),
         bHasRegisteredOffer);
 }
@@ -270,6 +277,8 @@ void ATruongSinhPlayerController::TryInteract()
     Plan.Strategy = ETruongSinhActivityStrategy::Balanced;
     Plan.OutputId = Definition->OutputId;
     Plan.MaximumOutputUnits = Definition->MaximumOutputUnits;
+    Plan.FormationEffectId = Definition->FormationEffectId;
+    Plan.FormationDurationMinutes = Definition->FormationDurationMinutes;
 
     FTruongSinhActivitySnapshot Snapshot;
     Snapshot.PerformerPower = FMath::Min<int64>(MAX_int64 - 6000, Before.CurrentVessel.CultivationUnits) + 6000;
@@ -302,6 +311,9 @@ void ATruongSinhPlayerController::TryInteract()
         CommitPayload.OutputUnits = Resolution.OutputUnits;
         CommitPayload.OutputQualityBps = Resolution.OutputQualityBps;
         CommitPayload.OutputImpurityBps = Resolution.OutputImpurityBps;
+        CommitPayload.FormationEffectId = Resolution.FormationEffectId;
+        CommitPayload.FormationIntegrityBps = Resolution.FormationIntegrityBps;
+        CommitPayload.FormationDurationMinutes = Resolution.FormationDurationMinutes;
         Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(CommitPayload);
     }
     else
@@ -337,6 +349,12 @@ void ATruongSinhPlayerController::TryInteract()
         static_cast<long long>(Resolution.OutputUnits),
         Resolution.OutputQualityBps / 100,
         Resolution.OutputImpurityBps / 100,
+        static_cast<long long>(Resolution.TimeAdvancedMinutes),
+        *SaveStatus) : ActivityType == ETruongSinhActivityType::Formation ? FString::Printf(
+        TEXT("Hiệu ứng %s\nĐộ bền %d%% · Duy trì %lld phút · Thời gian dựng +%lld phút%s"),
+        *Resolution.FormationEffectId.Value,
+        Resolution.FormationIntegrityBps / 100,
+        static_cast<long long>(Resolution.FormationDurationMinutes),
         static_cast<long long>(Resolution.TimeAdvancedMinutes),
         *SaveStatus) : FString::Printf(
         TEXT("Điểm %lld / %lld\nThời gian +%lld phút · Thiên đạo #%lld%s"),

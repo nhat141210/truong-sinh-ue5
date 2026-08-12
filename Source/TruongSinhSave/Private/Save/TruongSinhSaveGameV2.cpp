@@ -216,6 +216,24 @@ bool FTruongSinhSaveJsonCodecV2::Serialize(
         OutputValues.Add(MakeShared<FJsonValueObject>(Item));
     }
     Simulation->SetArrayField(TEXT("activity_outputs"), OutputValues);
+
+    TArray<FTruongSinhFormationState> Formations = State.Formations;
+    Formations.Sort([](const FTruongSinhFormationState& A, const FTruongSinhFormationState& B)
+    {
+        return A.CommandId.ToString(EGuidFormats::Digits) < B.CommandId.ToString(EGuidFormats::Digits);
+    });
+    TArray<TSharedPtr<FJsonValue>> FormationValues;
+    for (const FTruongSinhFormationState& Formation : Formations)
+    {
+        const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+        Item->SetStringField(TEXT("command"), Formation.CommandId.ToString(EGuidFormats::Digits));
+        Item->SetStringField(TEXT("blueprint"), Formation.BlueprintId.Value);
+        Item->SetStringField(TEXT("effect"), Formation.EffectId.Value);
+        SetInteger(Item, TEXT("integrity_bps"), Formation.IntegrityBps);
+        SetInteger(Item, TEXT("expires_at_minute"), Formation.ExpiresAtMinute);
+        FormationValues.Add(MakeShared<FJsonValueObject>(Item));
+    }
+    Simulation->SetArrayField(TEXT("formations"), FormationValues);
     Root->SetObjectField(TEXT("simulation"), Simulation);
 
     const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutJson);
@@ -425,6 +443,35 @@ bool FTruongSinhSaveJsonCodecV2::Deserialize(
         }
         OutputCommandIds.Add(Record.CommandId);
         State.ActivityOutputRecords.Add(MoveTemp(Record));
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* FormationValues = nullptr;
+    if (!Simulation->TryGetArrayField(TEXT("formations"), FormationValues) || !FormationValues)
+    {
+        OutError = TEXT("Missing formations.");
+        return false;
+    }
+    TSet<FGuid> FormationCommandIds;
+    for (const TSharedPtr<FJsonValue>& Value : *FormationValues)
+    {
+        const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;
+        FTruongSinhFormationState Formation;
+        FString CommandText;
+        if (!Item.IsValid() || !Item->TryGetStringField(TEXT("command"), CommandText) ||
+            !FGuid::ParseExact(CommandText, EGuidFormats::Digits, Formation.CommandId) ||
+            !GetStableId(Item, TEXT("blueprint"), Formation.BlueprintId, false, OutError) ||
+            !GetStableId(Item, TEXT("effect"), Formation.EffectId, false, OutError) ||
+            !GetInteger(Item, TEXT("integrity_bps"), Formation.IntegrityBps, OutError) ||
+            !GetInteger(Item, TEXT("expires_at_minute"), Formation.ExpiresAtMinute, OutError) ||
+            FormationCommandIds.Contains(Formation.CommandId) || !CommandIds.Contains(Formation.CommandId) ||
+            Formation.IntegrityBps <= 0 || Formation.IntegrityBps > 10000 ||
+            Formation.ExpiresAtMinute <= State.ElapsedMinutes)
+        {
+            OutError = TEXT("Invalid or duplicate formation state.");
+            return false;
+        }
+        FormationCommandIds.Add(Formation.CommandId);
+        State.Formations.Add(MoveTemp(Formation));
     }
 
     if (State.SchemaVersion != 2 || State.ElapsedMinutes < 0 ||

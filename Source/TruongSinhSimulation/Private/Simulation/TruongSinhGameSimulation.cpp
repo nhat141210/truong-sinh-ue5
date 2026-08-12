@@ -76,7 +76,13 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
             ActivityPayload->OutputImpurityBps > 10000 ||
             (ActivityPayload->OutputUnits > 0 && !ActivityPayload->OutputId.IsValid()) ||
             (ActivityPayload->OutputUnits == 0 && (ActivityPayload->OutputId.IsValid() ||
-                ActivityPayload->OutputQualityBps != 0 || ActivityPayload->OutputImpurityBps != 0)))))
+                ActivityPayload->OutputQualityBps != 0 || ActivityPayload->OutputImpurityBps != 0)) ||
+            ActivityPayload->FormationIntegrityBps < 0 || ActivityPayload->FormationIntegrityBps > 10000 ||
+            ActivityPayload->FormationDurationMinutes < 0 ||
+            (ActivityPayload->FormationDurationMinutes > 0 &&
+                (!ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps <= 0)) ||
+            (ActivityPayload->FormationDurationMinutes == 0 &&
+                (ActivityPayload->FormationEffectId.IsValid() || ActivityPayload->FormationIntegrityBps != 0)))))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
@@ -101,6 +107,11 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
     }
+    if (ActivityPayload && ActivityPayload->FormationDurationMinutes > 0 &&
+        InOutState.ElapsedMinutes + Minutes > MAX_int64 - ActivityPayload->FormationDurationMinutes)
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonOverflow);
+    }
 
     FTruongSinhActionResult Result;
     Result.Status = ETruongSinhActionStatus::Committed;
@@ -117,6 +128,10 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
     }
     InOutState.ElapsedMinutes = NewElapsedMinutes;
     InOutState.CurrentVessel.Lifespan.BiologicalAgeDays += BiologicalDaysAdded;
+    InOutState.Formations.RemoveAll([NewElapsedMinutes](const FTruongSinhFormationState& Formation)
+    {
+        return Formation.ExpiresAtMinute <= NewElapsedMinutes;
+    });
     InOutState.CurrentVessel.CultivationUnits += CultivationDelta;
     if (ActivityPayload)
     {
@@ -135,6 +150,16 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
             Record.QualityBps = ActivityPayload->OutputQualityBps;
             Record.ImpurityBps = ActivityPayload->OutputImpurityBps;
             InOutState.ActivityOutputRecords.Add(MoveTemp(Record));
+        }
+        if (ActivityPayload->FormationDurationMinutes > 0)
+        {
+            FTruongSinhFormationState Formation;
+            Formation.CommandId = Command.CommandId;
+            Formation.BlueprintId = ActivityPayload->ActivityId;
+            Formation.EffectId = ActivityPayload->FormationEffectId;
+            Formation.IntegrityBps = ActivityPayload->FormationIntegrityBps;
+            Formation.ExpiresAtMinute = NewElapsedMinutes + ActivityPayload->FormationDurationMinutes;
+            InOutState.Formations.Add(MoveTemp(Formation));
         }
     }
     ++InOutState.WorldRevision;
@@ -196,6 +221,17 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     }
     ActivityOutputs.Sort();
 
+    TArray<FString> FormationStates;
+    FormationStates.Reserve(State.Formations.Num());
+    for (const FTruongSinhFormationState& Formation : State.Formations)
+    {
+        FormationStates.Add(FString::Printf(TEXT("%s:%s:%s:%d:%lld"),
+            *Formation.CommandId.ToString(EGuidFormats::Digits), *Formation.BlueprintId.Value,
+            *Formation.EffectId.Value, Formation.IntegrityBps,
+            static_cast<long long>(Formation.ExpiresAtMinute)));
+    }
+    FormationStates.Sort();
+
     const auto SortedStableIds = [](const TArray<FTruongSinhStableId>& Ids)
     {
         TArray<FString> Values;
@@ -215,7 +251,7 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     const TArray<FString> OwnedAssets = SortedStableIds(State.CurrentVessel.OwnedAssetIds);
 
     const FString Canonical = FString::Printf(
-        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s|outputs=%s"),
+        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s|outputs=%s|formations=%s"),
         State.SchemaVersion,
         static_cast<long long>(State.ElapsedMinutes),
         static_cast<long long>(State.ExplorationRemainderMillis),
@@ -244,7 +280,8 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
         static_cast<long long>(State.Rng.MasterSeed),
         *FString::Join(RngStreams, TEXT(",")),
         *FString::Join(CommandIds, TEXT(",")),
-        *FString::Join(ActivityOutputs, TEXT(",")));
+        *FString::Join(ActivityOutputs, TEXT(",")),
+        *FString::Join(FormationStates, TEXT(",")));
 
     FTCHARToUTF8 Utf8(*Canonical);
     const FBlake3Hash Hash = FBlake3::HashBuffer(Utf8.Get(), static_cast<uint64>(Utf8.Length()));

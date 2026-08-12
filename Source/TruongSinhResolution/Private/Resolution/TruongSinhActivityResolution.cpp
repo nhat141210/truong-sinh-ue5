@@ -74,6 +74,16 @@ bool IsPlanValid(const FTruongSinhActivityPlan& Plan)
     {
         return false;
     }
+    if (Plan.Type == ETruongSinhActivityType::Formation &&
+        (!Plan.FormationEffectId.IsValid() || Plan.FormationDurationMinutes <= 0))
+    {
+        return false;
+    }
+    if (Plan.Type != ETruongSinhActivityType::Formation &&
+        (Plan.FormationEffectId.IsValid() || Plan.FormationDurationMinutes != 0))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -231,6 +241,15 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
         default:
             Result.OutputId = FTruongSinhStableId();
             break;
+        }
+        break;
+    case ETruongSinhActivityType::Formation:
+        if (Result.Outcome != ETruongSinhResolutionOutcome::Failure)
+        {
+            Result.FormationEffectId = Plan.FormationEffectId;
+            Result.FormationDurationMinutes = Plan.FormationDurationMinutes;
+            Result.FormationIntegrityBps = Result.Outcome == ETruongSinhResolutionOutcome::GreatSuccess ? 10000 :
+                Result.Outcome == ETruongSinhResolutionOutcome::Success ? 8500 : 6000;
         }
         break;
     default:

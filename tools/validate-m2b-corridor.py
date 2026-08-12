@@ -29,6 +29,7 @@ for required_label in (
     "VT_CultivationSite",
     "VT_BreakthroughSite",
     "VT_AlchemySite",
+    "VT_FormationSite",
     "VT_NPC_Caretaker_Temporary",
     "VT_Sun",
     "VT_SkyLight",
