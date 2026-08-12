@@ -1,8 +1,8 @@
-# Trường Sinh UE5
+# Trường Sinh Tiên giới
 
 Foundation cho game tu tiên Windows dùng Unreal Engine 5.8: trình bày open-zone 3D góc nhìn thứ ba, simulation/data-driven và chiến đấu theo lượt được biểu diễn trong đấu trường 3D.
 
-`觅长生` được dùng làm benchmark hành vi cho quá trình audit nội bộ. Repo này không chứa game gốc, media trích xuất, thoại, cốt truyện hay dữ liệu độc quyền của game tham chiếu.
+
 
 ## Trạng thái
 
