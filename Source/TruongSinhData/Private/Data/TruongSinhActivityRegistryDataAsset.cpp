@@ -33,6 +33,13 @@ bool UTruongSinhActivityRegistryDataAsset::ValidateRegistry(FString& OutError) c
             OutError = TEXT("Activity registry contains an invalid definition");
             return false;
         }
+        if ((Definition.ResolverId == TEXT("alchemy")) != Definition.OutputId.IsValid() ||
+            (Definition.OutputId.IsValid() && Definition.MaximumOutputUnits <= 0) ||
+            (!Definition.OutputId.IsValid() && Definition.MaximumOutputUnits != 0))
+        {
+            OutError = TEXT("Alchemy output definition is incomplete or unexpected");
+            return false;
+        }
         if (FacilityIds.Contains(Definition.FacilityId.Value) || ActivityIds.Contains(Definition.ActivityId.Value))
         {
             OutError = TEXT("Activity registry contains a duplicate facility or activity ID");

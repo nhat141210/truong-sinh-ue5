@@ -15,7 +15,7 @@ Trạng thái: `NOT_STARTED`, `SOURCE_ONLY`, `WINDOWS_VERIFIED`, `SLICE_PASS`, `
 | ACT-001 | Shared activity pipeline | Registry Data Asset chọn cultivation/đột phá cùng Plan→Resolve→Commit→Present, không widget/subsystem riêng | WINDOWS_VERIFIED |
 | ACT-002 | Replay safety | 1x/2x/skip/missing cue cùng result; load không reroll | NOT_STARTED |
 | CULT-001 | Tu luyện/đột phá | Tu vi/time/lifespan thay đổi deterministic | WINDOWS_VERIFIED |
-| ALC-001 | Luyện đan auto | Recipe/material/facility/strategy tạo output không minigame | NOT_STARTED |
+| ALC-001 | Luyện đan auto | Recipe/facility/strategy tạo pill số lượng/phẩm chất/tạp chất canonical, không minigame | WINDOWS_VERIFIED |
 | FORM-001 | Bố trận auto | Plan/material/site tạo formation state + replay | NOT_STARTED |
 | CONFLICT-001 | Đấu pháp auto | Realm/build/counter/strategy quyết định, RNG nhỏ | SOURCE_ONLY |
 | CONFLICT-002 | Tránh đấu | Có negotiate/pay/flee/sect-assist route | NOT_STARTED |

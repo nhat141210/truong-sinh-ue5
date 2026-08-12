@@ -64,6 +64,16 @@ bool IsPlanValid(const FTruongSinhActivityPlan& Plan)
             return false;
         }
     }
+    if (Plan.Type == ETruongSinhActivityType::Alchemy &&
+        (!Plan.OutputId.IsValid() || Plan.MaximumOutputUnits <= 0))
+    {
+        return false;
+    }
+    if (Plan.Type != ETruongSinhActivityType::Alchemy &&
+        (Plan.OutputId.IsValid() || Plan.MaximumOutputUnits != 0))
+    {
+        return false;
+    }
     return true;
 }
 
@@ -196,6 +206,30 @@ FTruongSinhAutoResolutionResult FTruongSinhAutoResolver::Resolve(
             Result.CultivationProgressUnits = 250;
             break;
         default:
+            break;
+        }
+        break;
+    case ETruongSinhActivityType::Alchemy:
+        Result.OutputId = Plan.OutputId;
+        switch (Result.Outcome)
+        {
+        case ETruongSinhResolutionOutcome::GreatSuccess:
+            Result.OutputUnits = Plan.MaximumOutputUnits;
+            Result.OutputQualityBps = 9500;
+            Result.OutputImpurityBps = 500;
+            break;
+        case ETruongSinhResolutionOutcome::Success:
+            Result.OutputUnits = FMath::Max<int64>(1, Plan.MaximumOutputUnits - 1);
+            Result.OutputQualityBps = 8000;
+            Result.OutputImpurityBps = 1500;
+            break;
+        case ETruongSinhResolutionOutcome::PartialSuccess:
+            Result.OutputUnits = 1;
+            Result.OutputQualityBps = 5500;
+            Result.OutputImpurityBps = 3000;
+            break;
+        default:
+            Result.OutputId = FTruongSinhStableId();
             break;
         }
         break;

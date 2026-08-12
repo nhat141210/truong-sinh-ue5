@@ -44,6 +44,11 @@ bool TryGetActivityType(const FTruongSinhActivityDefinition& Definition, ETruong
         OutType = ETruongSinhActivityType::Breakthrough;
         return true;
     }
+    if (Definition.ResolverId == TEXT("alchemy"))
+    {
+        OutType = ETruongSinhActivityType::Alchemy;
+        return true;
+    }
     return false;
 }
 
@@ -153,6 +158,8 @@ void ATruongSinhPlayerController::PlayerTick(const float DeltaTime)
     RuntimeHUD->SetInteractionPrompt(
         bHasRegisteredOffer ? (IsBreakthroughDefinition(*Definition)
             ? NSLOCTEXT("TruongSinh", "BreakthroughPrompt", "Đột phá Trúc Cơ")
+            : Definition->ResolverId == TEXT("alchemy")
+                ? NSLOCTEXT("TruongSinh", "AlchemyPrompt", "Luyện đan Thanh Tâm")
             : NSLOCTEXT("TruongSinh", "CultivatePrompt", "Tu luyện tám canh giờ")) : FText::GetEmpty(),
         bHasRegisteredOffer);
 }
@@ -243,6 +250,12 @@ void ATruongSinhPlayerController::TryInteract()
         ClientMessage(Requirement.ToString());
         return;
     }
+    if (Before.CurrentVessel.CultivationUnits < Definition->MinimumCultivationUnits)
+    {
+        ClientMessage(FString::Printf(TEXT("Cần ít nhất %lld tu vi cho hoạt động này."),
+            static_cast<long long>(Definition->MinimumCultivationUnits)));
+        return;
+    }
 
     FTruongSinhActivityPlan Plan;
     Plan.Action = ITruongSinhInteractionProvider::Execute_BuildInteractionCommand(
@@ -255,6 +268,8 @@ void ATruongSinhPlayerController::TryInteract()
     Plan.LocationId = Definition->LocationId;
     Plan.DurationMinutes = Definition->DurationMinutes;
     Plan.Strategy = ETruongSinhActivityStrategy::Balanced;
+    Plan.OutputId = Definition->OutputId;
+    Plan.MaximumOutputUnits = Definition->MaximumOutputUnits;
 
     FTruongSinhActivitySnapshot Snapshot;
     Snapshot.PerformerPower = FMath::Min<int64>(MAX_int64 - 6000, Before.CurrentVessel.CultivationUnits) + 6000;
@@ -272,7 +287,7 @@ void ATruongSinhPlayerController::TryInteract()
     }
 
     const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
-    if (bBreakthrough)
+    if (ActivityType != ETruongSinhActivityType::Cultivation)
     {
         FTruongSinhResolvedActivityCommitPayload CommitPayload;
         CommitPayload.ActivityId = Plan.ActivityId;
@@ -283,6 +298,10 @@ void ATruongSinhPlayerController::TryInteract()
         CommitPayload.NewRealmId = Resolution.NewRealmId;
         CommitPayload.OutcomeId = Resolution.OutcomeId;
         CommitPayload.ReplayId = Resolution.ReplayId;
+        CommitPayload.OutputId = Resolution.OutputId;
+        CommitPayload.OutputUnits = Resolution.OutputUnits;
+        CommitPayload.OutputQualityBps = Resolution.OutputQualityBps;
+        CommitPayload.OutputImpurityBps = Resolution.OutputImpurityBps;
         Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(CommitPayload);
     }
     else
@@ -312,6 +331,13 @@ void ATruongSinhPlayerController::TryInteract()
         static_cast<long long>(Resolution.RealmLifespanBonusDays),
         static_cast<long long>(Resolution.TimeAdvancedMinutes),
         static_cast<long long>(Commit.NewWorldRevision),
+        *SaveStatus) : ActivityType == ETruongSinhActivityType::Alchemy ? FString::Printf(
+        TEXT("%s ×%lld\nPhẩm chất %d%% · Tạp chất %d%% · Thời gian +%lld phút%s"),
+        *Resolution.OutputId.Value,
+        static_cast<long long>(Resolution.OutputUnits),
+        Resolution.OutputQualityBps / 100,
+        Resolution.OutputImpurityBps / 100,
+        static_cast<long long>(Resolution.TimeAdvancedMinutes),
         *SaveStatus) : FString::Printf(
         TEXT("Điểm %lld / %lld\nThời gian +%lld phút · Thiên đạo #%lld%s"),
         static_cast<long long>(Resolution.FinalScore),

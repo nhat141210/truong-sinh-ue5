@@ -104,6 +104,11 @@ def build_map():
         raise RuntimeError("Native TruongSinhBreakthroughSite class is unavailable; build the Editor target first")
     spawn(breakthrough_class, (650.0, 540.0, 105.0), label="SMK_BreakthroughSite")
 
+    alchemy_class = unreal.load_class(None, "/Script/TruongSinhUE5.TruongSinhAlchemySite")
+    if not alchemy_class:
+        raise RuntimeError("Native TruongSinhAlchemySite class is unavailable; build the Editor target first")
+    spawn(alchemy_class, (650.0, -540.0, 105.0), label="SMK_AlchemySite")
+
     level_subsystem.save_current_level()
     unreal.EditorAssetLibrary.save_asset(MAP_PACKAGE, only_if_is_dirty=False)
     unreal.log(f"Created and saved {MAP_PACKAGE}")

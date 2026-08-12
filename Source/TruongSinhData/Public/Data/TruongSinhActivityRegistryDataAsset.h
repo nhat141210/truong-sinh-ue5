@@ -45,6 +45,13 @@ struct TRUONGSINHDATA_API FTruongSinhActivityDefinition
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     int32 EnvironmentModifierUnits = 0;
+
+    /** Optional canonical output for recipes such as alchemy. Empty means no inventory output. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId OutputId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
+    int64 MaximumOutputUnits = 0;
 };
 
 /**

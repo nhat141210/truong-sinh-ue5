@@ -18,7 +18,7 @@ def stable_id(value):
 
 
 def definition(activity_id, facility_id, resolver_id, duration, minimum, difficulty,
-               technique, preparation, environment):
+               technique, preparation, environment, output_id="", maximum_output=0):
     result = unreal.TruongSinhActivityDefinition()
     result.set_editor_property("activity_id", stable_id(activity_id))
     result.set_editor_property("facility_id", stable_id(facility_id))
@@ -31,6 +31,9 @@ def definition(activity_id, facility_id, resolver_id, duration, minimum, difficu
     result.set_editor_property("technique_modifier_units", technique)
     result.set_editor_property("preparation_modifier_units", preparation)
     result.set_editor_property("environment_modifier_units", environment)
+    if output_id:
+        result.set_editor_property("output_id", stable_id(output_id))
+        result.set_editor_property("maximum_output_units", maximum_output)
     return result
 
 
@@ -73,6 +76,19 @@ registry.set_editor_property("definitions", [
         350,
         300,
         450,
+    ),
+    definition(
+        "activity.alchemy.qingxin_pill",
+        "facility.alchemy.qingxin",
+        "alchemy",
+        360,
+        0,
+        6500,
+        400,
+        350,
+        300,
+        "pill.qingxin",
+        3,
     ),
 ])
 

@@ -22,7 +22,8 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 - M2B có map riêng `/Game/Maps/VisualTarget/L_M2B_Corridor`: gate, corridor, water, ánh sáng/sương, caretaker tạm và cultivation site. Map qua structural validation, ResavePackages và được nạp bằng Development executable độc lập.
 - HUD native đã dùng frame ngọc/vàng có provenance rõ ràng; `realm.mortal` hiển thị là `PHÀM NHÂN` thay vì stable ID kỹ thuật.
 - M3 có lát cắt đột phá Trúc Cơ chạy qua chung pipeline activity: cần 800 tu vi, resolve deterministic, commit realm + thọ nguyên, autosave/pending replay và HUD result. Payload có precondition realm canonical nên không thể lặp lại để farm thọ nguyên.
-- Activity registry Data Asset `/Game/Data/DA_ActivityRegistry` giờ là nguồn setup cho cultivation và breakthrough. Bản Windows đã cook/load registry với 2 definitions; interaction không dùng fallback hard-code nếu registry lỗi/mất.
+- Activity registry Data Asset `/Game/Data/DA_ActivityRegistry` giờ là nguồn setup cho cultivation, breakthrough và alchemy. Bản Windows đã cook/load registry với 3 definitions; interaction không dùng fallback hard-code nếu registry lỗi/mất.
+- Luyện đan Thanh Tâm có furnace tương tác trong hai map dev, resolve deterministic và lưu output pill với quantity, quality, impurity trong canonical ledger. Ledger được hash/save/load; retry command không thể tạo output lần hai.
 
 ## Chưa được gọi là hoàn thành cuối
 
@@ -39,7 +40,7 @@ M1 Windows Native Foundation đã đạt build, automation, map package và Stan
 | M1 Windows native | COMPLETE (smoke evidence) | packaged build không thuộc M1 |
 | M2A Golden loop | IMPLEMENTED, RUNTIME SMOKE | cần manual interaction/Continue capture để đóng gate UX |
 | M2B Visual target | FOUNDATION VERIFIED | corridor loadable + temporary NPC/cultivation site + HUD frame; còn production art, activity cue, RTX3060 profile |
-| M3 Activity framework | SLICE PASS | registry Data Asset + cultivation/breakthrough chạy chung pipeline; còn alchemy, formation, conflict runtime |
+| M3 Activity framework | SLICE PASS | registry Data Asset + cultivation/breakthrough/alchemy chạy chung pipeline; còn formation, conflict runtime |
 | M4 Living world | NOT STARTED | canonical NPC/event/social/economy |
 | M5 Lifespan/soul | SOURCE PROOF | gameplay content/UI/save migration |
 | M6 Demo | NOT STARTED | four zones và authored content |

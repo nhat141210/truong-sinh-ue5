@@ -575,4 +575,79 @@ bool FTruongSinhBreakthroughCommitSpec::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTruongSinhAlchemyOutputSpec,
+    "TruongSinh.Activity.AlchemyOutputAndSave",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTruongSinhAlchemyOutputSpec::RunTest(const FString& Parameters)
+{
+    FTruongSinhSimulationState State = FTruongSinhGameSimulation::CreateNewGame(141210);
+    FTruongSinhActivityPlan Plan;
+    Plan.Action.CommandId = FGuid(81, 82, 83, 84);
+    Plan.Action.ActionId.Value = FTruongSinhGameSimulation::CommitResolvedActivityActionId;
+    Plan.Action.InstigatorId = State.CurrentVessel.VesselId;
+    Plan.Action.ExpectedWorldRevision = State.WorldRevision;
+    Plan.Type = ETruongSinhActivityType::Alchemy;
+    Plan.ActivityId.Value = TEXT("activity.alchemy.qingxin_pill");
+    Plan.MethodId.Value = TEXT("method.five_elements_breathing");
+    Plan.FacilityId.Value = TEXT("facility.alchemy.qingxin");
+    Plan.LocationId.Value = TEXT("zone.lower_realm.dev_smoke");
+    Plan.DurationMinutes = 360;
+    Plan.OutputId.Value = TEXT("pill.qingxin");
+    Plan.MaximumOutputUnits = 3;
+
+    FTruongSinhActivitySnapshot Snapshot;
+    Snapshot.PerformerPower = 10000;
+    Snapshot.DifficultyOrTargetPower = 6500;
+    Snapshot.TechniqueModifierUnits = 400;
+    Snapshot.PreparationModifierUnits = 350;
+    Snapshot.EnvironmentModifierUnits = 300;
+    Snapshot.MasterSeed = State.Rng.MasterSeed;
+    const FTruongSinhAutoResolutionResult Resolution = FTruongSinhAutoResolver::Resolve(Snapshot, Plan);
+    TestEqual(TEXT("Alchemy resolve is a deterministic great success at the configured power gap"),
+        Resolution.Outcome, ETruongSinhResolutionOutcome::GreatSuccess);
+    TestEqual(TEXT("Alchemy returns the authored output ID"), Resolution.OutputId.Value, FString(TEXT("pill.qingxin")));
+    TestEqual(TEXT("Great alchemy returns the recipe maximum"), Resolution.OutputUnits, 3ll);
+    TestEqual(TEXT("Great alchemy quality is deterministic"), Resolution.OutputQualityBps, 9500);
+    TestEqual(TEXT("Great alchemy impurity is deterministic"), Resolution.OutputImpurityBps, 500);
+
+    FTruongSinhResolvedActivityCommitPayload Payload;
+    Payload.ActivityId = Plan.ActivityId;
+    Payload.RequiredCurrentRealmId = State.CurrentVessel.RealmId;
+    Payload.Minutes = Resolution.TimeAdvancedMinutes;
+    Payload.OutcomeId = Resolution.OutcomeId;
+    Payload.ReplayId = Resolution.ReplayId;
+    Payload.OutputId = Resolution.OutputId;
+    Payload.OutputUnits = Resolution.OutputUnits;
+    Payload.OutputQualityBps = Resolution.OutputQualityBps;
+    Payload.OutputImpurityBps = Resolution.OutputImpurityBps;
+    Plan.Action.Payload.InitializeAs<FTruongSinhResolvedActivityCommitPayload>(Payload);
+    const FTruongSinhActionResult Commit = FTruongSinhGameSimulation::Execute(State, Plan.Action);
+    TestEqual(TEXT("Alchemy output commits through the shared gateway"), Commit.Status, ETruongSinhActionStatus::Committed);
+    TestEqual(TEXT("One canonical output record is retained"), State.ActivityOutputRecords.Num(), 1);
+    if (State.ActivityOutputRecords.Num() == 1)
+    {
+        TestEqual(TEXT("Ledger stores exact output quantity"), State.ActivityOutputRecords[0].Units, 3ll);
+        TestEqual(TEXT("Ledger stores quality"), State.ActivityOutputRecords[0].QualityBps, 9500);
+        TestEqual(TEXT("Ledger stores impurity"), State.ActivityOutputRecords[0].ImpurityBps, 500);
+    }
+
+    FTruongSinhSaveGameV2 Save;
+    Save.Simulation = State;
+    Save.PayloadHash = FTruongSinhGameSimulation::ComputeStateHash(State);
+    FString Json;
+    FString Error;
+    TestTrue(TEXT("Alchemy output save serializes"), FTruongSinhSaveJsonCodecV2::Serialize(Save, Json, Error));
+    FTruongSinhSaveGameV2 Loaded;
+    TestTrue(TEXT("Alchemy output save restores"), FTruongSinhSaveJsonCodecV2::Deserialize(Json, Loaded, Error));
+    TestEqual(TEXT("Save preserves the alchemy output ledger"), Loaded.Simulation.ActivityOutputRecords.Num(), 1);
+    if (Loaded.Simulation.ActivityOutputRecords.Num() == 1)
+    {
+        TestEqual(TEXT("Save preserves output identity"),
+            Loaded.Simulation.ActivityOutputRecords[0].OutputId.Value, FString(TEXT("pill.qingxin")));
+    }
+    return true;
+}
+
 #endif

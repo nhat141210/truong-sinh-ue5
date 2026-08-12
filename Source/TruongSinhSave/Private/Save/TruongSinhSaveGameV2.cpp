@@ -197,6 +197,25 @@ bool FTruongSinhSaveJsonCodecV2::Serialize(
         CommandValues.Add(MakeShared<FJsonValueString>(Id));
     }
     Simulation->SetArrayField(TEXT("committed_commands"), CommandValues);
+
+    TArray<FTruongSinhActivityOutputRecord> Outputs = State.ActivityOutputRecords;
+    Outputs.Sort([](const FTruongSinhActivityOutputRecord& A, const FTruongSinhActivityOutputRecord& B)
+    {
+        return A.CommandId.ToString(EGuidFormats::Digits) < B.CommandId.ToString(EGuidFormats::Digits);
+    });
+    TArray<TSharedPtr<FJsonValue>> OutputValues;
+    for (const FTruongSinhActivityOutputRecord& Record : Outputs)
+    {
+        const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+        Item->SetStringField(TEXT("command"), Record.CommandId.ToString(EGuidFormats::Digits));
+        Item->SetStringField(TEXT("activity"), Record.ActivityId.Value);
+        Item->SetStringField(TEXT("output"), Record.OutputId.Value);
+        SetInteger(Item, TEXT("units"), Record.Units);
+        SetInteger(Item, TEXT("quality_bps"), Record.QualityBps);
+        SetInteger(Item, TEXT("impurity_bps"), Record.ImpurityBps);
+        OutputValues.Add(MakeShared<FJsonValueObject>(Item));
+    }
+    Simulation->SetArrayField(TEXT("activity_outputs"), OutputValues);
     Root->SetObjectField(TEXT("simulation"), Simulation);
 
     const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutJson);
@@ -376,6 +395,36 @@ bool FTruongSinhSaveJsonCodecV2::Deserialize(
         }
         CommandIds.Add(Id);
         State.CommittedCommandIds.Add(Id);
+    }
+
+    const TArray<TSharedPtr<FJsonValue>>* OutputValues = nullptr;
+    if (!Simulation->TryGetArrayField(TEXT("activity_outputs"), OutputValues) || !OutputValues)
+    {
+        OutError = TEXT("Missing activity outputs.");
+        return false;
+    }
+    TSet<FGuid> OutputCommandIds;
+    for (const TSharedPtr<FJsonValue>& Value : *OutputValues)
+    {
+        const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;
+        FTruongSinhActivityOutputRecord Record;
+        FString CommandText;
+        if (!Item.IsValid() || !Item->TryGetStringField(TEXT("command"), CommandText) ||
+            !FGuid::ParseExact(CommandText, EGuidFormats::Digits, Record.CommandId) ||
+            !GetStableId(Item, TEXT("activity"), Record.ActivityId, false, OutError) ||
+            !GetStableId(Item, TEXT("output"), Record.OutputId, false, OutError) ||
+            !GetInteger(Item, TEXT("units"), Record.Units, OutError) ||
+            !GetInteger(Item, TEXT("quality_bps"), Record.QualityBps, OutError) ||
+            !GetInteger(Item, TEXT("impurity_bps"), Record.ImpurityBps, OutError) ||
+            OutputCommandIds.Contains(Record.CommandId) || !CommandIds.Contains(Record.CommandId) ||
+            Record.Units <= 0 || Record.QualityBps < 0 || Record.QualityBps > 10000 ||
+            Record.ImpurityBps < 0 || Record.ImpurityBps > 10000)
+        {
+            OutError = TEXT("Invalid or duplicate activity output.");
+            return false;
+        }
+        OutputCommandIds.Add(Record.CommandId);
+        State.ActivityOutputRecords.Add(MoveTemp(Record));
     }
 
     if (State.SchemaVersion != 2 || State.ElapsedMinutes < 0 ||

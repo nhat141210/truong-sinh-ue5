@@ -74,6 +74,44 @@ struct TRUONGSINHSIMULATION_API FTruongSinhResolvedActivityCommitPayload : publi
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     FTruongSinhStableId ReplayId;
+
+    /** Optional resolved item output. A positive quantity requires a valid output ID. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OutputId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0"))
+    int64 OutputUnits = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0", ClampMax = "10000"))
+    int32 OutputQualityBps = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation", meta = (ClampMin = "0", ClampMax = "10000"))
+    int32 OutputImpurityBps = 0;
+};
+
+/** Persistent result of a committed recipe/activity output. Ordered by command GUID for save/hash determinism. */
+USTRUCT(BlueprintType)
+struct TRUONGSINHSIMULATION_API FTruongSinhActivityOutputRecord
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FGuid CommandId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId ActivityId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    FTruongSinhStableId OutputId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int64 Units = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int32 QualityBps = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    int32 ImpurityBps = 0;
 };
 
 /** Minimal canonical state used to prove revision, time, RNG, idempotency and save round-trip. */
@@ -111,6 +149,10 @@ struct TRUONGSINHSIMULATION_API FTruongSinhSimulationState
     /** Persisted so retrying a command after Continue cannot double-charge time. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
     TArray<FGuid> CommittedCommandIds;
+
+    /** Canonical outputs from resolved activities; presentation never owns this inventory evidence. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Simulation")
+    TArray<FTruongSinhActivityOutputRecord> ActivityOutputRecords;
 };
 
 /** Pure deterministic transition engine. It never reads world, frame timing or presentation state. */

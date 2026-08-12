@@ -214,6 +214,12 @@ def build_map():
     )
     breakthrough_site.set_actor_scale3d(unreal.Vector(1.25, 1.25, 1.25))
 
+    alchemy_site_class = unreal.load_class(None, "/Script/TruongSinhUE5.TruongSinhAlchemySite")
+    if not alchemy_site_class:
+        raise RuntimeError("Could not load native TruongSinhAlchemySite class")
+    alchemy_site = spawn(alchemy_site_class, (2350, 0, 48), (0, 0, 0), "VT_AlchemySite")
+    alchemy_site.set_actor_scale3d(unreal.Vector(1.25, 1.25, 1.25))
+
     for index, (x, y, scale) in enumerate(((820, -920, 0.85), (1450, 1030, 1.15), (2800, 1040, 0.95), (4200, -1010, 1.25), (4650, 970, 0.8))):
         tree(index, x, y, scale, mats)
     for index, x in enumerate((100, 1050, 2000, 2950, 3900, 4850)):

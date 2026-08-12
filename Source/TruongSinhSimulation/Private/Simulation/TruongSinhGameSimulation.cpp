@@ -70,13 +70,27 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
         (ActivityPayload && (!ActivityPayload->ActivityId.IsValid() || !ActivityPayload->RequiredCurrentRealmId.IsValid() ||
             ActivityPayload->CultivationProgressUnits < 0 || ActivityPayload->RealmLifespanBonusDays < 0 ||
             (!ActivityPayload->NewRealmId.Value.IsEmpty() && !ActivityPayload->NewRealmId.IsValid()) ||
-            !ActivityPayload->OutcomeId.IsValid() || !ActivityPayload->ReplayId.IsValid())))
+            !ActivityPayload->OutcomeId.IsValid() || !ActivityPayload->ReplayId.IsValid() ||
+            ActivityPayload->OutputUnits < 0 || ActivityPayload->OutputQualityBps < 0 ||
+            ActivityPayload->OutputQualityBps > 10000 || ActivityPayload->OutputImpurityBps < 0 ||
+            ActivityPayload->OutputImpurityBps > 10000 ||
+            (ActivityPayload->OutputUnits > 0 && !ActivityPayload->OutputId.IsValid()) ||
+            (ActivityPayload->OutputUnits == 0 && (ActivityPayload->OutputId.IsValid() ||
+                ActivityPayload->OutputQualityBps != 0 || ActivityPayload->OutputImpurityBps != 0)))))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonInvalidPayload);
     }
     if (ActivityPayload && !(ActivityPayload->RequiredCurrentRealmId == InOutState.CurrentVessel.RealmId))
     {
         return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonActivityPrecondition);
+    }
+    if (ActivityPayload && ActivityPayload->OutputUnits > 0 &&
+        InOutState.ActivityOutputRecords.ContainsByPredicate([&Command](const FTruongSinhActivityOutputRecord& Record)
+        {
+            return Record.CommandId == Command.CommandId;
+        }))
+    {
+        return Reject(InOutState, Command, TruongSinhSimulationIds::ReasonDuplicateCommand);
     }
     const int64 CultivationDelta = CultivationPayload ? CultivationPayload->CultivationProgressUnits :
         ActivityPayload ? ActivityPayload->CultivationProgressUnits : 0;
@@ -110,6 +124,17 @@ FTruongSinhActionResult FTruongSinhGameSimulation::Execute(
         if (ActivityPayload->NewRealmId.IsValid())
         {
             InOutState.CurrentVessel.RealmId = ActivityPayload->NewRealmId;
+        }
+        if (ActivityPayload->OutputUnits > 0)
+        {
+            FTruongSinhActivityOutputRecord Record;
+            Record.CommandId = Command.CommandId;
+            Record.ActivityId = ActivityPayload->ActivityId;
+            Record.OutputId = ActivityPayload->OutputId;
+            Record.Units = ActivityPayload->OutputUnits;
+            Record.QualityBps = ActivityPayload->OutputQualityBps;
+            Record.ImpurityBps = ActivityPayload->OutputImpurityBps;
+            InOutState.ActivityOutputRecords.Add(MoveTemp(Record));
         }
     }
     ++InOutState.WorldRevision;
@@ -160,6 +185,17 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     }
     RngStreams.Sort();
 
+    TArray<FString> ActivityOutputs;
+    ActivityOutputs.Reserve(State.ActivityOutputRecords.Num());
+    for (const FTruongSinhActivityOutputRecord& Record : State.ActivityOutputRecords)
+    {
+        ActivityOutputs.Add(FString::Printf(TEXT("%s:%s:%s:%lld:%d:%d"),
+            *Record.CommandId.ToString(EGuidFormats::Digits), *Record.ActivityId.Value,
+            *Record.OutputId.Value, static_cast<long long>(Record.Units), Record.QualityBps,
+            Record.ImpurityBps));
+    }
+    ActivityOutputs.Sort();
+
     const auto SortedStableIds = [](const TArray<FTruongSinhStableId>& Ids)
     {
         TArray<FString> Values;
@@ -179,7 +215,7 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
     const TArray<FString> OwnedAssets = SortedStableIds(State.CurrentVessel.OwnedAssetIds);
 
     const FString Canonical = FString::Printf(
-        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s"),
+        TEXT("schema=%d|minutes=%lld|remainder=%lld|revision=%lld|layer=%s|soul=%s:%d:%s:%s:%s|vessel=%s:%s:%s:%s:%s:%lld:%lld:%lld:%lld:%lld:%lld:%lld:%s:%s|rng=%d:%lld|streams=%s|commands=%s|outputs=%s"),
         State.SchemaVersion,
         static_cast<long long>(State.ElapsedMinutes),
         static_cast<long long>(State.ExplorationRemainderMillis),
@@ -207,7 +243,8 @@ FString FTruongSinhGameSimulation::ComputeStateHash(const FTruongSinhSimulationS
         State.Rng.AlgorithmVersion,
         static_cast<long long>(State.Rng.MasterSeed),
         *FString::Join(RngStreams, TEXT(",")),
-        *FString::Join(CommandIds, TEXT(",")));
+        *FString::Join(CommandIds, TEXT(",")),
+        *FString::Join(ActivityOutputs, TEXT(",")));
 
     FTCHARToUTF8 Utf8(*Canonical);
     const FBlake3Hash Hash = FBlake3::HashBuffer(Utf8.Get(), static_cast<uint64>(Utf8.Length()));

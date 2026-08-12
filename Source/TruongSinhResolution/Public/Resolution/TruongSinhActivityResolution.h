@@ -81,6 +81,13 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhActivityPlan
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     ETruongSinhActivityStrategy Strategy = ETruongSinhActivityStrategy::Balanced;
+
+    /** Authored output carried from the activity definition, used only by matching resolver types. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId OutputId;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity", meta = (ClampMin = "0"))
+    int64 MaximumOutputUnits = 0;
 };
 
 /** Immutable canonical values supplied by simulation. Every score uses the same fixed-point units. */
@@ -188,6 +195,19 @@ struct TRUONGSINHRESOLUTION_API FTruongSinhAutoResolutionResult
     /** Empty for activities that do not change realm. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId NewRealmId;
+
+    /** Recipe output emitted by a deterministic alchemy resolution. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    FTruongSinhStableId OutputId;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int64 OutputUnits = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int32 OutputQualityBps = 0;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
+    int32 OutputImpurityBps = 0;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Truong Sinh|Activity")
     FTruongSinhStableId OutcomeId;
