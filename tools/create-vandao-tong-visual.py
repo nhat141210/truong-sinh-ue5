@@ -176,7 +176,10 @@ materials = {
 # Replace the rectangular foundation with a single irregular, tapered island.
 # Its flat top preserves the authored route while the 8–12 m underside supplies
 # the floating-realm silhouette in every wide shot.
-spawn_mesh(master_estate, (3000, 0, -5), (1.0, 1.0, 1.0), "VDT_MasterEstate", materials=materials)
+# The FBX is normalized to local min-Z=0 with an 18.2 m underside. Place its
+# top surface at the established gameplay cull/floor height (world Z=0), so
+# the sect architecture and native activity anchors remain above the plateau.
+spawn_mesh(master_estate, (3000, 0, -1820), (1.0, 1.0, 1.0), "VDT_MasterEstate", materials=materials)
 
 # Reserve eight quiet expansion parcels around the central route. These flush,
 # non-colliding green pads keep future building locations stable without making
