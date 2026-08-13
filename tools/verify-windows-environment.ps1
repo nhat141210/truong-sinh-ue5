@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$UnrealRoot = "C:\Program Files\Epic Games\UE_5.8",
-    [int]$MinimumFreeGb = 250
+    [int]$MinimumFreeGb = 150
 )
 
 Set-StrictMode -Version Latest
