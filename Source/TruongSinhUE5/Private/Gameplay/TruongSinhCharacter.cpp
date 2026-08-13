@@ -15,6 +15,7 @@
 #include "InputActionValue.h"
 #include "InputCoreTypes.h"
 #include "InputMappingContext.h"
+#include "Materials/MaterialInterface.h"
 #include "Math/RotationMatrix.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -39,6 +40,8 @@ ATruongSinhCharacter::ATruongSinhCharacter()
         TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.MF_Unarmed_Jog_Fwd"));
     static ConstructorHelpers::FObjectFinder<UAnimationAsset> FallAsset(
         TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.MM_Fall_Loop"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> ExplorationClothMaterial(
+        TEXT("/Game/VisualTarget/Materials/M_VT_DyedCloth.M_VT_DyedCloth"));
 
     if (MannyMesh.Succeeded())
     {
@@ -47,6 +50,13 @@ ATruongSinhCharacter::ATruongSinhCharacter()
         GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
         GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+        if (ExplorationClothMaterial.Succeeded())
+        {
+            for (int32 MaterialIndex = 0; MaterialIndex < GetMesh()->GetNumMaterials(); ++MaterialIndex)
+            {
+                GetMesh()->SetMaterial(MaterialIndex, ExplorationClothMaterial.Object);
+            }
+        }
     }
 
     IdleAnimation = IdleAsset.Object;
@@ -55,12 +65,19 @@ ATruongSinhCharacter::ATruongSinhCharacter()
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->TargetArmLength = 360.0f;
+    CameraBoom->TargetArmLength = 410.0f;
+    CameraBoom->SocketOffset = FVector(0.0f, 58.0f, 34.0f);
+    CameraBoom->bEnableCameraLag = true;
+    CameraBoom->CameraLagSpeed = 12.0f;
+    CameraBoom->CameraLagMaxDistance = 35.0f;
+    CameraBoom->bEnableCameraRotationLag = true;
+    CameraBoom->CameraRotationLagSpeed = 16.0f;
     CameraBoom->bUsePawnControlRotation = true;
 
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
     FollowCamera->bUsePawnControlRotation = false;
+    FollowCamera->SetFieldOfView(75.0f);
 
     ExplorationMappingContext = CreateDefaultSubobject<UInputMappingContext>(TEXT("IMC_Exploration"));
     MoveForwardAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_MoveForward"));

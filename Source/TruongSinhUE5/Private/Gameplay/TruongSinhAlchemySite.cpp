@@ -23,7 +23,7 @@ ATruongSinhAlchemySite::ATruongSinhAlchemySite()
     if (Sphere.Succeeded()) FlameMesh->SetStaticMesh(Sphere.Object);
     FurnaceLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("FurnaceLight")); FurnaceLight->SetupAttachment(SceneRoot);
     FurnaceLight->SetRelativeLocation(FVector(0.0f, 0.0f, 165.0f)); FurnaceLight->SetIntensity(1000.0f);
-    FurnaceLight->SetAttenuationRadius(440.0f); FurnaceLight->SetLightColor(FLinearColor(1.0f, 0.22f, 0.05f)); FurnaceLight->SetCastShadows(true);
+    FurnaceLight->SetAttenuationRadius(440.0f); FurnaceLight->SetLightColor(FLinearColor(1.0f, 0.22f, 0.05f)); FurnaceLight->SetCastShadows(false);
     SetActorEnableCollision(true);
 }
 

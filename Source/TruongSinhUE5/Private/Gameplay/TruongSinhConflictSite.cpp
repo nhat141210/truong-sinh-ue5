@@ -36,7 +36,7 @@ ATruongSinhConflictSite::ATruongSinhConflictSite()
     TrialLight->SetIntensity(650.0f);
     TrialLight->SetAttenuationRadius(420.0f);
     TrialLight->SetLightColor(FLinearColor(0.72f, 0.18f, 0.12f));
-    TrialLight->SetCastShadows(true);
+    TrialLight->SetCastShadows(false);
     SetActorEnableCollision(true);
 }
 

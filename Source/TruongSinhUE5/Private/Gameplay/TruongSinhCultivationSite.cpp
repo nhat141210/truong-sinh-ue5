@@ -50,7 +50,8 @@ ATruongSinhCultivationSite::ATruongSinhCultivationSite()
     FocusLight->SetIntensity(900.0f);
     FocusLight->SetAttenuationRadius(480.0f);
     FocusLight->SetLightColor(FLinearColor(0.34f, 0.68f, 1.0f));
-    FocusLight->SetCastShadows(true);
+    // Presentation cue only. The sun and authored corridor lamps own the shadow budget.
+    FocusLight->SetCastShadows(false);
 
     SetActorEnableCollision(true);
 }

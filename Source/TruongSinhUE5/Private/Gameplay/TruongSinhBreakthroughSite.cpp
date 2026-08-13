@@ -49,7 +49,7 @@ ATruongSinhBreakthroughSite::ATruongSinhBreakthroughSite()
     BeaconLight->SetIntensity(1150.0f);
     BeaconLight->SetAttenuationRadius(520.0f);
     BeaconLight->SetLightColor(FLinearColor(1.0f, 0.56f, 0.18f));
-    BeaconLight->SetCastShadows(true);
+    BeaconLight->SetCastShadows(false);
 
     SetActorEnableCollision(true);
 }

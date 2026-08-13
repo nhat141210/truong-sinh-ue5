@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "asset_set": "UE 5.8 High LevelPrototyping architecture primitives",
+  "source": {
+    "product": "Unreal Engine",
+    "engine_version": "5.8.1",
+    "installed_path": "Templates/TemplateResources/High/LevelPrototyping/Content",
+    "license": "Unreal Engine EULA",
+    "license_url": "https://www.unrealengine.com/eula/unreal"
+  },
+  "purpose": "Production-blockout architecture with beveled edges and curved eaves; project materials override template defaults.",
+  "install_script": "tools/install-ue58-architecture-kit.ps1",
+  "destination_package_root": "/Game/LevelPrototyping",
+  "files": [
+    {
+      "name": "Meshes/SM_ChamferCube.uasset",
+      "bytes": 128849,
+      "sha256": "b20a3ae9668ec599db519af3f84b67952d0e31ac4427b80ee812232edde91f53"
+    },
+    {
+      "name": "Meshes/SM_Cylinder.uasset",
+      "bytes": 193636,
+      "sha256": "76aaa3c2b812ff790fb57ae7736b748e4e1556afbb13466fd787d4bacd2c7dfe"
+    },
+    {
+      "name": "Meshes/SM_Plane.uasset",
+      "bytes": 15581,
+      "sha256": "39ab83dc57a9a27a80476711610f72e81c0685a05d4aa95413b3e4e7f6c4a3f2"
+    },
+    {
+      "name": "Meshes/SM_QuarterCylinder.uasset",
+      "bytes": 135087,
+      "sha256": "4087b3f85753d9ccbced7d00d42208dad4d21185f24a97b0c86db31be867b733"
+    },
+    {
+      "name": "Meshes/SM_QuarterCylinderOuter.uasset",
+      "bytes": 79741,
+      "sha256": "ab58a5224da57452f367c9d55ea4976466138fc2cb8ec9e2fa92748c86a07f11"
+    },
+    {
+      "name": "Materials/M_FlatCol.uasset",
+      "bytes": 11771,
+      "sha256": "41dbbda4b463a224c29ee01765e1f52a8ae63f2f94f1440ee267fe7b1a481585"
+    },
+    {
+      "name": "Materials/MI_DefaultColorway.uasset",
+      "bytes": 9260,
+      "sha256": "786a4dfcaaa6f4daf459c77bda247c2c138140680a8246d521974d0cc4fc8a8e"
+    },
+    {
+      "name": "Materials/M_PrototypeGrid.uasset",
+      "bytes": 79863,
+      "sha256": "bf8625ad5917cee705867038d8a590b25465e6b5d5818a738a584e515d7cbdfc"
+    },
+    {
+      "name": "Materials/MF_ProcGrid.uasset",
+      "bytes": 49820,
+      "sha256": "e5ee13abdb241d9811f6c1bcc0a607d229fa7adc5f46bfd5a9d5fedbfa279683"
+    },
+    {
+      "name": "Materials/MI_PrototypeGrid_Gray.uasset",
+      "bytes": 13121,
+      "sha256": "084681bf680dad66b8c8ca803d927053cf46756f2f2e62d18fcc439e07de7263"
+    },
+    {
+      "name": "Textures/T_GridChecker_A.uasset",
+      "bytes": 9600,
+      "sha256": "bb8334767064b107ec4f4407ef1365e8b9e2dfeff5984e66d4a6232254ddd02a"
+    }
+  ]
+}

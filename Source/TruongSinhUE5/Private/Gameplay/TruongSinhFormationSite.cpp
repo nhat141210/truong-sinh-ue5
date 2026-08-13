@@ -38,7 +38,7 @@ ATruongSinhFormationSite::ATruongSinhFormationSite()
     ArrayLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("ArrayLight"));
     ArrayLight->SetupAttachment(SceneRoot); ArrayLight->SetRelativeLocation(FVector(0, 0, 100));
     ArrayLight->SetIntensity(850.0f); ArrayLight->SetAttenuationRadius(500.0f);
-    ArrayLight->SetLightColor(FLinearColor(0.12f, 0.9f, 0.58f)); ArrayLight->SetCastShadows(true);
+    ArrayLight->SetLightColor(FLinearColor(0.12f, 0.9f, 0.58f)); ArrayLight->SetCastShadows(false);
     SetActorEnableCollision(true);
 }
 

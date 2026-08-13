@@ -58,3 +58,34 @@ Design reference chỉ lưu URL công khai, ngày truy cập, observation và qu
 - Chỉnh sửa: chỉ xóa nền phẳng `#ff00ff`, soft matte và despill; không compositing hay reference-derived content.
 - Prompt chính: khung HUD orthographic bằng ngọc tối và chỉ vàng cổ, họa tiết mây/núi tiết chế, tâm rỗng, không chữ/logo/watermark, nền chroma phẳng.
 - Import script: `tools/import-ui-art.py`; trạng thái `M2B FOUNDATION`, chưa phải toàn bộ UI skin final.
+
+## Manifest — Poly Haven 2K PBR environment kit
+
+- Asset IDs: `stone_tiles`, `roof_tiles_14`, `wooden_planks`, `clay_plaster`.
+- Source: Poly Haven asset pages/API, downloaded 2026-08-12 at 2K only.
+- Authors: Christopher Melani; Rob Tuytel; Dario Barresi and Charlotte Baglioni; Amal Kumar.
+- License/scope: CC0 1.0 Universal; commercial use, modification and redistribution in the project are permitted. Source provenance is retained even though attribution is not required.
+- Imported maps per material: Diffuse JPG, DirectX Normal JPG, packed ARM JPG. No 4K/8K variants were downloaded, matching the 2K environment budget.
+- Machine-readable URLs, exact filenames and SHA-256 values: `SourceArt/Environment/PolyHaven/manifest.json`.
+- Review status: `APPROVED_FOR_M2B_VERTICAL_SLICE`; this approval covers these four material sets only, not arbitrary Poly Haven downloads.
+
+## Manifest — UE 5.8.1 High LevelPrototyping architecture kit
+
+- Asset ID: `UE58-HIGH-LEVELPROTOTYPING-ARCH-001`.
+- Nguồn gốc: Epic Games Launcher, Unreal Engine 5.8.1, `Templates/TemplateResources/High/LevelPrototyping/Content/Meshes`.
+- License/scope: Unreal Engine EULA; dùng trong sản phẩm Unreal Engine này, không phân phối bộ asset độc lập. Cần release/legal review trước phát hành thương mại.
+- Phạm vi import: 5 mesh đã chọn (`ChamferCube`, `Cylinder`, `Plane`, `QuarterCylinder`, `QuarterCylinderOuter`) và đúng 6 material/texture dependency của chúng; không copy toàn bộ template.
+- Mục đích: cạnh kiến trúc bắt sáng tốt hơn, cột tròn, mái/hiên cong và góc mái nâng; vật liệu project/PBR luôn override vật liệu template.
+- Script tái lập và xác minh: `tools/install-ue58-architecture-kit.ps1`.
+- Machine-readable provenance, byte size và SHA-256: `SourceArt/Architecture/UE58LevelPrototyping/manifest.json`.
+- Review status: `APPROVED_FOR_M2B_VERTICAL_SLICE`.
+
+## Manifest — Poly Haven Ninomaru Teien HDRI
+
+- Asset ID: `ninomaru_teien`; source: `https://polyhaven.com/a/ninomaru_teien`; author: Greg Zaal.
+- License/scope: CC0 1.0 Universal; commercial use, modification and redistribution in this Unreal Engine project are permitted.
+- Downloaded 2026-08-12 from the official Poly Haven API as the 4K Radiance HDR variant (28,651,738 bytes); 4K is reserved for this hero lighting environment and remains inside the art budget.
+- Source: `SourceArt/Environment/PolyHaven/hdri/ninomaru_teien_4k.hdr`; SHA-256 `87EE3C894C753655D8B3A84CBFC596123C1A0E4CFA9256099FF0A886E3B102B0`; upstream MD5 `3C20EA63DC6D65A844D9D1646AFEFBE5`.
+- Capture metadata: sunrise, partly cloudy, low-contrast natural light, 5400 K white balance and 8 EV range. Intended use is Skylight image-based lighting/reflection for the M2B corridor; it does not replace authored Sky Atmosphere or weather.
+- Reproducible acquisition/import/validation: `tools/download-polyhaven-hdri.ps1`, `tools/import-polyhaven-hdri.py`, `tools/validate-polyhaven-hdri.py`.
+- Review status: `APPROVED_FOR_M2B_VERTICAL_SLICE`.
