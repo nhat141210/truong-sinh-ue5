@@ -20,6 +20,11 @@ if (-not (Test-Path -LiteralPath $editorCmd)) {
 if (-not (Test-Path -LiteralPath $projectFullPath -PathType Leaf)) {
     throw "Missing project file: $projectFullPath"
 }
+$openEditor = @(Get-Process -Name "UnrealEditor", "UnrealEditor-Cmd" -ErrorAction SilentlyContinue)
+if ($openEditor.Count -gt 0) {
+    $ids = ($openEditor | ForEach-Object { $_.Id }) -join ", "
+    throw "UnrealEditor/UnrealEditor-Cmd is still running (PID $ids). Close it before commandlet automation; the test gate is intentionally exclusive."
+}
 
 New-Item -ItemType Directory -Force -Path $reportFullPath | Out-Null
 $compileArg = if ($NoCompile) { "-nocompile" } else { "" }

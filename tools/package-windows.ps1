@@ -47,6 +47,16 @@ if (-not (Test-Path -LiteralPath $uat)) {
 if (-not (Test-Path -LiteralPath $projectFullPath -PathType Leaf)) {
     throw "Missing project file: $projectFullPath"
 }
+
+# BuildCookRun owns the project binaries, Intermediate and cooked output while
+# it runs.  A live UnrealEditor can keep those files locked (or let Live
+# Coding load a different DLL), producing a misleading partial package.  Fail
+# before creating the archive marker so the gate is explicit and recoverable.
+$openEditor = @(Get-Process -Name "UnrealEditor", "UnrealEditor-Cmd" -ErrorAction SilentlyContinue)
+if ($openEditor.Count -gt 0) {
+    $ids = ($openEditor | ForEach-Object { $_.Id }) -join ", "
+    throw "UnrealEditor/UnrealEditor-Cmd is still running (PID $ids). Close it before BuildCookRun; the package gate is intentionally exclusive."
+}
 if (Test-PathInside -Candidate $archiveFullPath -Container $repoRoot) {
     throw "ArchiveDirectory must be outside the repository to avoid committing package output."
 }

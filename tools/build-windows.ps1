@@ -17,6 +17,11 @@ if (-not (Test-Path -LiteralPath $buildBat -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $projectFullPath -PathType Leaf)) {
     throw "Missing project file: $projectFullPath"
 }
+$openEditor = @(Get-Process -Name "UnrealEditor", "UnrealEditor-Cmd" -ErrorAction SilentlyContinue)
+if ($openEditor.Count -gt 0) {
+    $ids = ($openEditor | ForEach-Object { $_.Id }) -join ", "
+    throw "UnrealEditor/UnrealEditor-Cmd is still running (PID $ids). Close it before native build; the build gate is intentionally exclusive."
+}
 
 function Invoke-UnrealBuild {
     param(

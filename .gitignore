@@ -16,6 +16,8 @@ Saved/
 *.VC.opendb
 __pycache__/
 *.py[cod]
+# Blender's automatic one-generation backup; the authored .blend is kept.
+*.blend1
 
 # Rider / Visual Studio / Windows
 .idea/
@@ -52,3 +54,8 @@ CrashReportClient/
 !Source/
 !docs/
 !tools/
+
+# UE import-preflight outputs are disposable validation artifacts.  The
+# scripts regenerate these under /Game/External; authored map references must
+# live under /Game/TruongSinh instead.
+Content/External/

@@ -1,0 +1,38 @@
+{
+  "asset_set": "VanDaoHall",
+  "author": "Truong Sinh UE5 team",
+  "license": "CC0-1.0",
+  "source": "Original procedural Blender geometry; no external assets, textures, or downloads.",
+  "units": "metres in Blender; FBX applies Unreal-compatible centimetre scale",
+  "blender_version": "5.2.0 LTS",
+  "source_blend": {
+    "file": "VDT_MainHallKit.blend",
+    "sha256": "1ceacef22b7d6e335912410668353b625dd20e7af7801e6851ddaea989febff9"
+  },
+  "assets": [
+    {
+      "file": "VDT_MainHallFacade.fbx",
+      "asset": "SM_VDT_MainHallFacade",
+      "sha256": "d89fed7faf0c29a004f6687624f4aa99fdd001fe1ef63baefabf29eb0beac716",
+      "role": "hero facade, 18m wide; place at the corridor terminus"
+    },
+    {
+      "file": "VDT_RoofEave_Module.fbx",
+      "asset": "SM_VDT_RoofEave_Module",
+      "sha256": "38a63d07326f4feaf8777defa31b5405cb78dac791933cb2559640c509b5a890",
+      "role": "repeatable roof/eave silhouette module"
+    },
+    {
+      "file": "VDT_Dougong_Cluster.fbx",
+      "asset": "SM_VDT_Dougong_Cluster",
+      "sha256": "c0bf7e6f1331eafb99e0ba1d950ab8ea14cd7bf505dec3576e0c8699241979f9",
+      "role": "repeatable carved wooden bracket cluster"
+    },
+    {
+      "file": "VDT_MoonWindowPanel.fbx",
+      "asset": "SM_VDT_MoonWindowPanel",
+      "sha256": "db1bc02e75d403d2ee0ac16c50f8419c0e8058abc3b91c6b3be1c86393bd15a3",
+      "role": "decorative circular lattice panel"
+    }
+  ]
+}

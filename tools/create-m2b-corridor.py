@@ -9,10 +9,17 @@ scanned nature assets and the verified UE 5.8 High LevelPrototyping architecture
 kit.  This map does not replace the M2A smoke/startup map.
 """
 
+import os
+
 import unreal
 
 
-MAP_PACKAGE = "/Game/Maps/VisualTarget/L_M2B_Corridor"
+MAP_PACKAGE = os.environ.get(
+    "TRUONGSINH_VISUAL_MAP_PACKAGE",
+    "/Game/Maps/VisualTarget/L_M2B_Corridor",
+)
+if not MAP_PACKAGE.startswith("/Game/Maps/VisualTarget/"):
+    raise RuntimeError(f"Refusing visual-map target outside /Game/Maps/VisualTarget: {MAP_PACKAGE}")
 MATERIAL_PATH = "/Game/VisualTarget/Materials"
 
 CUBE = "/Engine/BasicShapes/Cube.Cube"
@@ -99,8 +106,10 @@ def create_material(name, color, roughness=0.7, metallic=0.0):
 
 
 def spawn(actor_class, location, rotation=(0.0, 0.0, 0.0), label=None):
+    pitch, yaw, roll = rotation
+    actor_rotation = unreal.Rotator(pitch=pitch, yaw=yaw, roll=roll)
     actor = unreal.EditorLevelLibrary.spawn_actor_from_class(
-        actor_class, unreal.Vector(*location), unreal.Rotator(*rotation)
+        actor_class, unreal.Vector(*location), actor_rotation
     )
     if not actor:
         raise RuntimeError(f"Could not spawn {actor_class} at {location}")
@@ -270,6 +279,7 @@ def build_map():
         "tile_wet": create_material("M_VT_BlueBlackTileWet", (0.025, 0.095, 0.11), 0.24),
         "foliage": create_material("M_VT_PineDeep", (0.035, 0.12, 0.075), 0.88),
         "foliage_alt": create_material("M_VT_PineMoss", (0.09, 0.18, 0.095), 0.9),
+        "realm_grass": create_material("M_VT_RealmGrass", (0.095, 0.19, 0.105), 0.93),
         "water": create_material("M_VT_QuietWater", (0.025, 0.14, 0.17), 0.16, 0.05),
         "cloth": create_material("M_VT_DyedCloth", (0.28, 0.035, 0.025), 0.72),
         "brass": create_material("M_VT_AgedBrass", (0.31, 0.16, 0.045), 0.38, 0.72),

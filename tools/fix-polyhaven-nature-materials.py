@@ -45,6 +45,9 @@ def rebuild_material(name, spec):
             unreal.MaterialEditingLibrary.connect_material_property(
                 node, "A", unreal.MaterialProperty.MP_OPACITY_MASK
             )
+            unreal.MaterialEditingLibrary.connect_material_property(
+                node, "RGB", unreal.MaterialProperty.MP_SUBSURFACE_COLOR
+            )
     if masked:
         material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
         material.set_editor_property("two_sided", True)
@@ -81,6 +84,8 @@ for data in registry.get_assets_by_path(ROOT, recursive=True):
         old = mesh.get_material(slot)
         old_name = old.get_name() if old else ""
         key = next((candidate for candidate in SPECS if candidate == old_name), None)
+        if key is None and "/pine_sapling_small/" in path:
+            key = "pine_sapling_small_bark" if slot == 0 else "pine_sapling_small_twig"
         if key is None:
             key = next((candidate for candidate in SPECS if candidate in path), None)
         if key is None:

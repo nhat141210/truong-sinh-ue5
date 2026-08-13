@@ -1,0 +1,13 @@
+{
+  "kind": "derived-fbx-metre-contract",
+  "tool": "tools/normalize-fbx-metre-contract.py",
+  "source_kit": "../manifest.json",
+  "conversion": "legacy centimetre-number Blender geometry scaled by 0.01; object transform baked into one mesh; XY centred and min-Z grounded; UE import scale remains 1.0",
+  "assets": {
+    "SM_VDT_StoneStele.fbx": "87aa98d39b080ff9ef8e64fe77c2b932156b2723d2627e85f9f30fc14a3477c4",
+    "SM_VDT_StoneLantern.fbx": "7bd1249b58a54354cf1494ddac1efb1314882d567d2d932fcfe6feeead60e1be",
+    "SM_VDT_RitualBrazier.fbx": "592dbbe07e9a1abefb132a228b59b81c363c2b3d962722d1ed48b8ed2b847be0",
+    "SM_VDT_BridgeBaluster.fbx": "b2055ae28c7da919f7553b98dfbee89d104805146db99f7a557914189a144d4a",
+    "SM_VDT_BridgeRailing_400.fbx": "2ad2b0bae3b7e182a9fc2c307b093f73ee768e8938897f3e6f796bc010d423ac"
+  }
+}

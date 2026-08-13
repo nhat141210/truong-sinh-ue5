@@ -1,0 +1,34 @@
+{
+  "asset": "SM_VDT_MasterEstate.fbx",
+  "sha256": "9af953f4ecf2ac8f476161d4d0f912cd116fec3aa5447f4c7387b7289caaf0cb",
+  "source": "Original procedural Blender geometry authored for the Vấn Đạo Tông master estate",
+  "license": "Project-owned original geometry",
+  "blender": "5.2.0 LTS",
+  "source_blend": {
+    "file": "SM_VDT_MasterEstate.blend",
+    "sha256": "b581cda2d8da99e1c5777dead2d455451e493d9494f9239ca7e9801c66d6dcf9"
+  },
+  "dimensions_m": [
+    299.026,
+    206.471,
+    18.2
+  ],
+  "vertices": 193,
+  "triangles": 382,
+  "material_slots": [
+    "M_VDT_MasterEstateTop",
+    "M_VDT_MasterEstateCliff"
+  ],
+  "planning_contract": {
+    "buildable_area_m": [
+      270.0,
+      180.0
+    ],
+    "central_route_preserved": true,
+    "reserved_expansion_lots": 8
+  },
+  "ue_import": {
+    "uniform_scale": 1.0,
+    "collision": "auto convex"
+  }
+}
