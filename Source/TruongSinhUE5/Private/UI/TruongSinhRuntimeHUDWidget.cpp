@@ -13,11 +13,9 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/GameInstance.h"
-#include "Engine/Texture2D.h"
 #include "Simulation/TruongSinhGameSimulation.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "UObject/ConstructorHelpers.h"
 
 namespace TruongSinhHUD
 {
@@ -116,9 +114,9 @@ void AddHorizontal(UHorizontalBox* Parent, UWidget* Child, const FMargin& Paddin
 UTruongSinhRuntimeHUDWidget::UTruongSinhRuntimeHUDWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
-    static ConstructorHelpers::FObjectFinder<UTexture2D> FrameTexture(
-        TEXT("/Game/UI/Generated/T_UI_JadeFrame.T_UI_JadeFrame"));
-    OrnateFrameTexture = FrameTexture.Object;
+    // The clean baseline deliberately has no generated art dependency.  The
+    // native rounded-panel treatment remains functional until a future UI
+    // content pass assigns a frame texture.
 }
 
 TSharedRef<SWidget> UTruongSinhRuntimeHUDWidget::RebuildWidget()

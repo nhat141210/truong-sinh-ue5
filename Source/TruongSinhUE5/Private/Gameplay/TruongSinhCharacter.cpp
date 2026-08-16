@@ -1,6 +1,5 @@
 #include "Gameplay/TruongSinhCharacter.h"
 
-#include "Animation/AnimationAsset.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -15,9 +14,7 @@
 #include "InputActionValue.h"
 #include "InputCoreTypes.h"
 #include "InputMappingContext.h"
-#include "Materials/MaterialInterface.h"
 #include "Math/RotationMatrix.h"
-#include "UObject/ConstructorHelpers.h"
 
 ATruongSinhCharacter::ATruongSinhCharacter()
 {
@@ -32,36 +29,10 @@ ATruongSinhCharacter::ATruongSinhCharacter()
     GetCharacterMovement()->bOrientRotationToMovement = true;
     GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> MannyMesh(
-        TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
-    static ConstructorHelpers::FObjectFinder<UAnimationAsset> IdleAsset(
-        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/MM_Idle.MM_Idle"));
-    static ConstructorHelpers::FObjectFinder<UAnimationAsset> JogAsset(
-        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jog/MF_Unarmed_Jog_Fwd.MF_Unarmed_Jog_Fwd"));
-    static ConstructorHelpers::FObjectFinder<UAnimationAsset> FallAsset(
-        TEXT("/Game/Characters/Mannequins/Anims/Unarmed/Jump/MM_Fall_Loop.MM_Fall_Loop"));
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> ExplorationClothMaterial(
-        TEXT("/Game/VisualTarget/Materials/M_VT_DyedCloth.M_VT_DyedCloth"));
-
-    if (MannyMesh.Succeeded())
-    {
-        GetMesh()->SetSkeletalMesh(MannyMesh.Object);
-        GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -96.0f));
-        GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-        GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-        if (ExplorationClothMaterial.Succeeded())
-        {
-            for (int32 MaterialIndex = 0; MaterialIndex < GetMesh()->GetNumMaterials(); ++MaterialIndex)
-            {
-                GetMesh()->SetMaterial(MaterialIndex, ExplorationClothMaterial.Object);
-            }
-        }
-    }
-
-    IdleAnimation = IdleAsset.Object;
-    JogAnimation = JogAsset.Object;
-    FallAnimation = FallAsset.Object;
+    // Presentation assets are intentionally assigned later by the clean
+    // content pass. Gameplay movement and input must not depend on a bundled
+    // character mesh or animation asset.
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);

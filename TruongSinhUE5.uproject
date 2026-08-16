@@ -72,36 +72,6 @@
     {
       "Name": "CommonUI",
       "Enabled": true
-    },
-    {
-      "Name": "GameFeatures",
-      "Enabled": true
-    },
-    {
-      "Name": "ModelContextProtocol",
-      "Enabled": true,
-      "TargetAllowList": [
-        "Editor"
-      ]
-    },
-    {
-      "Name": "AllToolsets",
-      "Enabled": true,
-      "TargetAllowList": [
-        "Editor"
-      ]
-    },
-    {
-      "Name": "PythonScriptPlugin",
-      "Enabled": true,
-      "TargetAllowList": [
-        "Editor"
-      ]
-    },
-    {
-      "Name": "ModelingToolsEditorMode",
-      "Enabled": true,
-      "TargetAllowList": ["Editor"]
     }
   ]
 }

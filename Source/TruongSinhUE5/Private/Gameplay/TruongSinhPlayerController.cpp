@@ -18,7 +18,6 @@
 #include "TruongSinhInteractionProvider.h"
 #include "TruongSinhUE5.h"
 #include "UI/TruongSinhRuntimeHUDWidget.h"
-#include "UObject/ConstructorHelpers.h"
 
 namespace
 {
@@ -139,9 +138,10 @@ const TCHAR* ConflictApproachText(const ETruongSinhConflictApproach Approach)
 ATruongSinhPlayerController::ATruongSinhPlayerController(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
-    static ConstructorHelpers::FObjectFinder<UTruongSinhActivityRegistryDataAsset> RegistryAsset(
-        TEXT("/Game/Data/DA_ActivityRegistry.DA_ActivityRegistry"));
-    ActivityRegistry = RegistryAsset.Object;
+    // Activity definitions are content-owned.  The code-only baseline keeps
+    // the simulation and interaction implementation without pinning it to a
+    // deleted data asset; the new world/content pass assigns this registry.
+    ActivityRegistry = nullptr;
 }
 
 void ATruongSinhPlayerController::BeginPlay()
